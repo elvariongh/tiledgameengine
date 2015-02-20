@@ -1,6 +1,6 @@
 (function(w) {
 
-    var _fps = FPSMeter ? new FPSMeter({'graph':1, 'heat': 1, 'theme': 'transparent'}) : undefined;
+    var _fps = (typeof FPSMeter !== undefined) ? new FPSMeter({'graph':1, 'heat': 1, 'theme': 'transparent'}) : undefined;
 
     var rAF = 0;                   // reference for RequestAnimationFrame
     var ttu = 0;                   // TimeToUpdate - time (in ms) till next update
@@ -10,7 +10,6 @@
     var running = false;           // Flag to store runloop state
         
     var stages = {};               // key:value dictionary of game stages
-//    var activeStage = undefined;   // Current active stage name
     var forceRedraw = false;       // if set to TRUE - stage will be redrawn forcibly
     
     /**
@@ -19,16 +18,8 @@
      */
     function TGE() {
         "use strict";
-//        this.rAF = 0;                   // reference for RequestAnimationFrame
-//        this.ttu = 0;                   // TimeToUpdate - time (in ms) till next update
-//        this.utime = 0;                  // Last update time
 
-//        this.initialized = false;       // Flag to store init state
-//        this.running = false;           // Flag to store runloop state
-        
-//        this.stages = {};               // key:value dictionary of game stages
         this.activeStage = undefined;   // Current active stage name
-//        this.forceRedraw = false;       // if set to TRUE - stage will be redrawn forcibly
     };
 
     /**
@@ -98,8 +89,6 @@
      */
     TGE.prototype.frame = function(time) {
         "use strict";
-        if (_fps) _fps['tick']();
-
         var dt = time - utime;
 
         if (ttu - dt > 0 && !forceRedraw) {
@@ -132,7 +121,8 @@
         if (this.activeStage) {
             return this.activeStage['update'](dt);
         }
-        return 16;
+
+        return ~~(1000/60);
     };
 
     /**
@@ -142,6 +132,7 @@
      */
     TGE.prototype.renderFrame = function() {
         "use strict";
+        if (_fps) _fps['tickStart']();
         if (this.activeStage) {
             // redraw canvas only if required
             if (this.activeStage['redraw'] || forceRedraw) {
@@ -150,6 +141,7 @@
         }
         
         forceRedraw = false;
+        if (_fps) _fps['tick']();
     };
     
     /**

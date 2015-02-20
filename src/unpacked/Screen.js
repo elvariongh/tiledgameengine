@@ -13,6 +13,8 @@
         
         this.ctx = [];
         this.domViewport = undefined;
+        
+        this.boundingBox = new Int32Array([-width, -height, width, height]);
 
         // viewport data storage [left, top, width, height, visible]
         this['viewport'] = new Int32Array([0, 0, width, height, false]);
@@ -91,15 +93,25 @@
             if (!this.dnd[3] && !this.dnd[4]) return;
             
             // update viewport coordinates
-            this['viewport'][0] += this.dnd[3];
-            this['viewport'][1] += this.dnd[4];
+            if (this['viewport'][0] + this.dnd[3] > this.boundingBox[0] &&
+                this['viewport'][0] + this['viewport'][2] + this.dnd[3] < this.boundingBox[2]) {
+                this['viewport'][0] += this.dnd[3];
+            } else this.dnd[3] = 0;
+            
+            if (this['viewport'][1] + this.dnd[4] > this.boundingBox[1] &&
+                this['viewport'][1] + this['viewport'][3] + this.dnd[4] < this.boundingBox[3]) {
+                this['viewport'][1] += this.dnd[4];
+            } else this.dnd[4] = 0;
 
             // store new initial mouse position
             this.dnd[0] = e.clientX;
             this.dnd[1] = e.clientY;
             
-            // notify all subscribers
-            TGE['bus']['notify']('onviewportmove');
+            if (this.dnd[3] + this.dnd[4]) {
+//                console.log(this.dnd[3], this.dnd[4]);
+                // notify all subscribers
+                TGE['bus']['notify']('onviewportmove');
+            }
         }
     };
     
@@ -120,8 +132,13 @@
         
         this.domViewport.style.width = width + 'px';
         this.domViewport.style.height = height + 'px';
+        
+        // this.boundingBox[0] = -width;
+        // this.boundingBox[1] = -height;
+        // this.boundingBox[2] = width;
+        // this.boundingBox[3] = height;
 
-        if (TGE.bus) {
+        if (TGE['bus']) {
             TGE['bus']['notify']('onviewportresize');
         }
     };
@@ -183,6 +200,50 @@
         // set initial viewport size
         this['resize'](this['viewport'][2], this['viewport'][3]);
     };
+    
+    // remove canvas layer (-s)
+    Screen.prototype['remLayer'] = function(count) {
+        count = count || 1;
+
+        var i = this['layers'],
+            t = this.domViewport.innerHTML.split('</canvas>');
+
+        for (i = t.length; i--;) {
+            if (t[i].length === 0) {
+                delete t[i];
+                t.splice(i, 1)
+//                ++i;
+            }
+        }
+        
+        i = this['layers'];
+        
+        for (;i--;) {
+            delete this.ctx[i];
+        }
+
+        i = this['layers'];
+        while (count--) {
+            t.pop();
+            --i;
+        }
+        
+        t = t.join('</canvas>');
+        
+        this.domViewport.innerHTML = t;
+
+        this.ctx.length = i;
+        this['layers'] = i;
+
+        for (i = 0; i < this['layers']; ++i) {
+            this.ctx[i] = document.getElementById('_tgelr'+i);
+            this.ctx[i] = this.ctx[i].getContext('2d')
+            
+        }
+        
+        // set initial viewport size
+        this['resize'](this['viewport'][2], this['viewport'][3]);
+    };
 
     // clear specified layer/all layers
     // @param {number|undefined}    layer   layer id
@@ -202,6 +263,13 @@
     // set background color for whole scene
     Screen.prototype['setBGColor'] = function(color) {
         this.domViewport['style']['backgroundColor'] = color;
+    };
+    
+    Screen.prototype['setBoundingBox'] = function(left, top, right, bottom) {
+        this.boundingBox[0] = +left;
+        this.boundingBox[1] = +top;
+        this.boundingBox[2] = +right;
+        this.boundingBox[3] = +bottom;
     };
     
     TGE['Screen'] = Screen;

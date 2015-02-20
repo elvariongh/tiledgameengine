@@ -53,7 +53,7 @@ Game.prototype.onAssetsLoaded = function() {
     console.log('onAssetsLoaded');
     
     if (!this.assetsLoaded) {
-        // download assets from map
+        // .json file loaded - time to download assets from map
         this.assetsLoaded = true;
         
         var stage = this.getStage('load');
@@ -62,17 +62,18 @@ Game.prototype.onAssetsLoaded = function() {
         
         stage.start();
     } else {
+        // all assets loaded - time to parse map
         this.map.parse();
     }
 };
 
 Game.prototype.onMapParsed = function(key, value) {
-    setTimeout((function() { this.activateStage('playground'); }).bind(this), 1500);
+    setTimeout((function() { this.activateStage('playground'); }).bind(this), 1000);
 };
 
-//var G;
+var G;
 function start() {
-    var G = new Game();
+    G = new Game();
     
     G.init();
     

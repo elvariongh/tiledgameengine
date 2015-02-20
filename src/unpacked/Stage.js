@@ -1,5 +1,9 @@
 (function(w, TGE) {
+    /** @type {number}          Subscriber ID for Viewport move event */
+    var sidMove = -1;
 
+    /** @type {number}          Subscriber ID for Viewport resize event */
+    var sidResize = -1;
     /**
      * Game stage basic class
      * @memberOf TiledGameEngine
@@ -23,12 +27,6 @@
         
         /** @type {Screen}          Screen and Viewport manager to work with */
         this['screen'] = screen;
-
-        /** @type {number}          Subscriber ID for Viewport move event */
-        this['sidMove'] = -1;
-
-        /** @type {number}          Subscriber ID for Viewport resize event */
-        this['sidResize'] = -1;
     };
     
     /**
@@ -62,13 +60,13 @@
     Stage.prototype['onViewportResize'] = function(key, value) {
         // mark stage for redraw
         this['redraw'] = true;
-        TGE['bus']['notify']('invalidateStage', this['name']);
+        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
     };
 
     Stage.prototype['onViewportMove'] = function(key, value) {
         // mark stage for redraw
         this['redraw'] = true;
-        TGE['bus']['notify']('invalidateStage', this['name']);
+        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
     };
 
     /**
@@ -77,10 +75,10 @@
     Stage.prototype['deactivate'] = function() {
         this['active'] = false;
 
-        TGE['bus']['unsubscribe']('onViewportResize', this['sidResize']);
-        TGE['bus']['unsubscribe']('onViewportMove', this['sidMove']);
+        TiledGameEngine['bus']['unsubscribe']('onViewportResize', sidResize);
+        TiledGameEngine['bus']['unsubscribe']('onViewportMove', sidMove);
 
-        this['sidResize'] = this['sidMove'] = -1;
+        sidResize = sidMove = -1;
 
         // mark stage as up to date - no redraw needed
         this['redraw'] = false;
@@ -93,13 +91,23 @@
         this['active'] = true;
 
         // subscribe to Viewport events
-        this['sidResize'] = TGE['bus']['subscribe']('onViewportResize', this['onViewportResize'].bind(this));
-        this['sidMove'] = TGE['bus']['subscribe']('onViewportMove', this['onViewportMove'].bind(this));
+        sidResize = TiledGameEngine['bus']['subscribe']('onViewportResize', this['onViewportResize'].bind(this));
+        sidMove = TiledGameEngine['bus']['subscribe']('onViewportMove', this['onViewportMove'].bind(this));
         
         // mark stage for redraw
         this['redraw'] = true;
-        TGE['bus']['notify']('invalidateStage', this['name']);
+        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
     };
-    
+
+/*    
+    Stage.prototype['renderToCanvas'] = function (width, height, renderFunction) {
+        var buffer = document.createElement('canvas');
+        buffer.width = width;
+        buffer.height = height;
+        renderFunction(buffer.getContext('2d'));
+        return buffer;
+    };
+*/
+
     TGE['Stage'] = Stage;
 })(window, TiledGameEngine);

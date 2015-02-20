@@ -4,13 +4,13 @@
      */
     function Assets() {
         this.success = 0;
-        this.error = 0;
+        this.errors = 0;
         
         this.cache = {};
         
         this.queue = [];
         
-        this.map = {};
+        this.qmap = {};
         
         this.cbProgress = undefined;
         this.cbDone = undefined;
@@ -20,15 +20,15 @@
         this.fnLoad = this.fnLoad.bind(this);
     };
     
-    Assets.prototype.request = function(name) {
+    function request(name) {
         // check if such resource already requested to avoid multiple downloading of same asset
-        if (this.map[name]) {
+        if (this.qmap[name]) {
             return;
         }
         
         // store request
         this.queue[this.queue.length] = name;
-        this.map[name] = 1;
+        this.qmap[name] = 1;
     };
         
     Assets.prototype.fnProgress = function(event) {
@@ -44,10 +44,10 @@
     };
         
     Assets.prototype.fnError = function(event) {
-        ++this.error;
+        ++this.errors;
         
-        if (this.completed()) {
-            this.finish();
+        if (this['completed']()) {
+            this.fnFinish();
         }
     };
         
@@ -99,7 +99,7 @@
             console.warn('Unknown asset type', type);
             r = xhr.response;
             
-            this.error++;
+            ++this.errors;
         }
         
         this.cache[xhr.url] = r;
@@ -108,12 +108,12 @@
             this.cbProgress(xhr.url, 100);
         }
 
-        if (this.completed()) {
-            this.finish();
+        if (this['completed']()) {
+            this.fnFinish();
         }
     };
         
-    Assets.prototype.finish = function() {
+    Assets.prototype.fnFinish = function() {
         var cb = this.cbDone;
         
         this.cbProgress = undefined;
@@ -126,7 +126,7 @@
         }
     };
         
-    Assets.prototype.download = function(fnDone, fnProgress) {
+    function download(fnDone, fnProgress) {
         if (this.queue.length === 0) {
             
             if (fnDone) {
@@ -146,8 +146,8 @@
                     this.cbProgress(name, 100);
                 }
 
-                if (this.completed()) {
-                    this.finish();
+                if (this['completed']()) {
+                    this.fnFinish();
                     return;
                 }
             } else {
@@ -163,25 +163,36 @@
             }
         }
     };
-        
-    Assets.prototype.get = function(name) {
+
+    function get(name) {
         return this.cache[name];
     };
         
-    Assets.prototype.completed = function() {
-        return this.queue.length <= this.error + this.success;
+    function completed() {
+        return this.queue.length <= this.errors + this.success;
     };
         
-    Assets.prototype.clear = function() {
+    function clear() {
         this.success = 0;
-        this.error = 0
+        this.errors = 0
         this.cache = {};
         this.queue.length = 0;
-        this.map = {};
+        this.qmap = {};
         
         this.cbProgress = undefined;
         this.cbDone = undefined;
     };
+    
+    function total() {
+        return this.queue.length;
+    };
+    
+    Assets.prototype['request'] = request;
+    Assets.prototype['download'] = download;
+    Assets.prototype['get'] = get;
+    Assets.prototype['clear'] = clear;
+    Assets.prototype['completed'] = completed;
+    Assets.prototype['total'] = total;
     
     TGE['Assets'] = Assets;
 

@@ -7,7 +7,7 @@
     }
     
     // Add new handler for event == key
-    PubSub.prototype.subscribe = function(key, handler) {
+    PubSub.prototype['subscribe'] = function(key, handler) {
         key = key.toLowerCase();
         if (this.handlers[key] === undefined)
             this.handlers[key] = [];
@@ -17,7 +17,7 @@
     };
 
         // Remove handler for key
-    PubSub.prototype.unsubscribe = function(key, sid) {
+    PubSub.prototype['unsubscribe'] = function(key, sid) {
         key = key.toLowerCase();
 
         if (!this.handlers[key])
@@ -35,7 +35,7 @@
     };
 
         // Notify all handlers for the specified key. Value is optional
-    PubSub.prototype.notify = function(key, value) {
+    PubSub.prototype['notify'] = function(key, value) {
         key = key.toLowerCase();
 
         if (!this.handlers[key])

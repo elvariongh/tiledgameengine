@@ -67,7 +67,7 @@ Game.prototype.onAssetsLoaded = function() {
 };
 
 Game.prototype.onMapParsed = function(key, value) {
-    setTimeout((function() { this.activateStage('playground'); }).bind(this), 1000);
+    setTimeout((function() { this.activateStage('playground'); }).bind(this), 1500);
 };
 
 //var G;

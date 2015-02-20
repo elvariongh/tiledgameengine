@@ -4,18 +4,18 @@
         
         this.am = assetManager;
         
-        this.ready = false;
+        this['ready'] = false;
         
-        this.layers = [];
+        this['layers'] = [];
         
-        this.tilesets = []
+        this['tilesets'] = []
         
-        this.tilewidth = 64;
-        this.tileheight = 32;
-        this.bgcolor = '#000';
+        this['tilewidth'] = 64;
+        this['tileheight'] = 32;
+        this['bgcolor'] = '#000';
     };
     
-    TiledMap.prototype.parse = function() {
+    TiledMap.prototype['parse'] = function() {
         if (!this.am) return false;
         
         var json = this.am.get(this.asset);
@@ -58,22 +58,22 @@
         json['tilesets'] = arr;
 
         // store references for map data
-        this.layers = json['layers'];
-        this.tilesets = json['tilesets'];
+        this['layers'] = json['layers'];
+        this['tilesets'] = json['tilesets'];
 
-        this.tilewidth = json['tilewidth'];
-        this.tileheight = json['tileheight'];
+        this['tilewidth'] = json['tilewidth'];
+        this['tileheight'] = json['tileheight'];
         
-        this.bgcolor = json['backgroundcolor'];
+        this['bgcolor'] = json['backgroundcolor'];
         
-        this.ready = true;
+        this['ready'] = true;
         
-        TGE.bus.notify('tmxMapParsed');
+        TGE['bus']['notify']('tmxMapParsed');
         
         return true;
     };
     
-    TiledMap.prototype.getAssets = function() {
+    TiledMap.prototype['getAssets'] = function() {
         var json = this.am.get(this.asset);
         
         if (!json) return [];

@@ -8,27 +8,26 @@
      * @param {TiledMap}                map                 Reference to the TiledGameEngine.TiledMap instance
      */
     function TiledMapStage(assetManager, screen, map) {
-        TGE.Stage.call(this, 'TiledMapStage', assetManager, screen);
+        TiledGameEngine['Stage'].call(this, 'TiledMapStage', assetManager, screen);
         
-        this.map = map;
-    }
+        this.tmap = map;
+    };
     
     // super-class inheritance
-    TiledMapStage.prototype = Object.create(TGE.Stage.prototype);
+    TiledMapStage.prototype = Object.create(TGE['Stage'].prototype);
     
     /**
      * Activate stage.
      */
-
-    TiledMapStage.prototype.activate = function() {
-        TiledGameEngine.Stage.prototype.activate.call(this);
+    TiledMapStage.prototype['activate'] = function() {
+        TiledGameEngine['Stage'].prototype['activate'].call(this);
         
-        if (this.screen.layers < this.map.layers.length) {
-            this.screen.addLayer(this.map.layers.length - this.screen.layers);
+        if (this['screen']['layers'] < this.tmap['layers'].length) {
+            this['screen']['addLayer'](this.tmap['layers'].length - this['screen']['layers']);
         }
 
-        this.screen.setBGColor(this.map.bgcolor);
-        this.redraw = true;
+        this['screen']['setBGColor'](this.tmap['bgcolor']);
+        this['redraw'] = true;
     };
 
 /*
@@ -42,33 +41,33 @@
      * @param {number}  dt      time difference from last update
      * @return {number}         Return time difference (in ms) to next update
      */
-    TiledMapStage.prototype.update = function(dt) {
+    TiledMapStage.prototype['update'] = function(dt) {
         // 2 FPS if no screen, map or stage is not active
-        if (!this.screen || !this.map || !this.active) return 500;
+        if (!this['screen'] || !this.tmap || !this['active']) return 500;
         
-        if (this.map.ready) {
+        if (this.tmap['ready']) {
             // mark stage as invalid - redraw required
 //            this.redraw = true;
             
-            dt = dt % 32;
+            dt = dt % 16;
 
-            return 32 - dt; // 30 FPS by default
+            return 16 - dt;// - dt; // 30 FPS by default
         } else {
             return 100; // 10 FPS is enough for idle stage
         }
     };
 
-    TiledMapStage.prototype.render = function() {
+    TiledMapStage.prototype['render'] = function() {
         // mark stage as up to date - no redraw needed
-        this.redraw = false;
+        this['redraw'] = false;
 
         // stage is not active, map is not defined, no viewport or map is not parsed yet
-        if (!this.active || !this.map || !this.screen) return;
-        if (!this.map.ready) return;
+        if (!this['active'] || !this.tmap || !this['screen']) return;
+        if (!this.tmap['ready']) return;
         
         var i = 0,                                      // {number}     layer id
             layer,                                      // {object}     reference for layer
-            layerscount =  this.map.layers.length,      // {number}     count of layers
+            layerscount =  this.tmap['layers'].length,  // {number}     count of layers
             data,                                       // {TypedArray} reference for layer data
             j,                                          // {number}     itterator for layer data
             datalength,                                 // {number}     layer data length
@@ -81,10 +80,13 @@
             scrx, scry,                                 // {number}     screen coordinates
             ctx;
             
-        this.screen.clear();
+//        this.screen.clear();
+        
+        // viewport array structure: [left, top, width, height, visible]
+        var vp = this['screen']['viewport'];
         
         for (; i < layerscount; ++i) {
-            layer = this.map.layers[i];
+            layer = this.tmap['layers'][i];
             
             // ignore object and image layers
             if (layer['type'] !== 'tilelayer') {
@@ -94,22 +96,23 @@
             // layer is not visible - ignore it
             if (!layer['visible']) continue;
             
-//            if (layer['name'] !== 'background') continue;
-            
             // get layer data and itterate through it for rendering
             data = layer['data'];
             
             datalength = data.length;
+
+            ctx = this['screen']['getLayer'](i);
+            this['screen']['clear'](i);
             
             for (j = 0; j < datalength; ++j) {
                 idx = data[j];
                 
                 if (!idx) continue; // if tile index is 0 - no tile for render
                 
-                tsidx = this.map.tilesets.length;
+                tsidx = this.tmap['tilesets'].length;
                 
                 for (;tsidx--;) {
-                    tileset = this.map.tilesets[tsidx];
+                    tileset = this.tmap['tilesets'][tsidx];
                     
                     if (idx >= tileset['firstgid'] && idx <= tileset['lastgid']) break;
                 }
@@ -117,7 +120,7 @@
                 // no tilesed found for that layer
                 if (tsidx < 0) continue;
                 
-                img = this.am.get(tileset['image']);
+                img = this['am'].get(tileset['image']);
                 
                 if (!img) continue;
                 
@@ -130,8 +133,8 @@
                 tx = ~~(j % layer['width']);
                 ty = ~~(j / layer['width']);
                 
-                scrx = (tx - ty) * this.map.tilewidth / 2;
-                scry = (tx + ty) * this.map.tileheight / 2;
+                scrx = (tx - ty) * this.tmap['tilewidth'] / 2;
+                scry = (tx + ty) * this.tmap['tileheight'] / 2;
                 
                 // adjust tile position, if any
                 if (tileset['tileoffset']) {
@@ -143,9 +146,6 @@
                 
                 // render progress bar
 
-                // viewport array structure: [left, top, width, height, visible]
-                var vp = this.screen.viewport;
-                ctx = this.screen.getLayer(i);
                 ctx.drawImage(img, imgx, imgy, tileset['tilewidth'], tileset['tileheight'], scrx + vp[0], scry + vp[1], tileset['tilewidth'], tileset['tileheight']);
             }
             

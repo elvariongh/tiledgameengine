@@ -1,19 +1,34 @@
 (function(w) {
+
+    var _fps = FPSMeter ? new FPSMeter({'graph':1, 'heat': 1, 'theme': 'transparent'}) : undefined;
+
+    var rAF = 0;                   // reference for RequestAnimationFrame
+    var ttu = 0;                   // TimeToUpdate - time (in ms) till next update
+    var utime = 0;                  // Last update time
+
+    var initialized = false;       // Flag to store init state
+    var running = false;           // Flag to store runloop state
+        
+    var stages = {};               // key:value dictionary of game stages
+//    var activeStage = undefined;   // Current active stage name
+    var forceRedraw = false;       // if set to TRUE - stage will be redrawn forcibly
+    
     /**
      * TiledGameEngine main class
      * @constructor
      */
     function TGE() {
-        this.rAF = 0;                   // reference for RequestAnimationFrame
-        this.ttu = 0;                   // TimeToUpdate - time (in ms) till next update
-        this.time = 0;                  // Last update time
+        "use strict";
+//        this.rAF = 0;                   // reference for RequestAnimationFrame
+//        this.ttu = 0;                   // TimeToUpdate - time (in ms) till next update
+//        this.utime = 0;                  // Last update time
 
-        this.initialized = false;       // Flag to store init state
-        this.running = false;           // Flag to store runloop state
+//        this.initialized = false;       // Flag to store init state
+//        this.running = false;           // Flag to store runloop state
         
-        this.stages = {};               // key:value dictionary of game stages
+//        this.stages = {};               // key:value dictionary of game stages
         this.activeStage = undefined;   // Current active stage name
-        this.forceRedraw = false;       // if set to TRUE - stage will be redrawn forcibly
+//        this.forceRedraw = false;       // if set to TRUE - stage will be redrawn forcibly
     };
 
     /**
@@ -21,19 +36,26 @@
      * @this {TGE}
      * @export
      */
-    TGE.prototype.init = function() {
-        this.initialized = true;
+    TGE.prototype['init'] = function () {
+        "use strict";
+        initialized = true;
         this.frame = this.frame.bind(this);
         
-        TGE.bus = new TGE.PubSub();
+        TGE['bus'] = new TGE['PubSub']();
         
-        TGE.bus.subscribe('invalidateStage', this.onInvalidateStage.bind(this));
+        TGE['bus']['subscribe']('invalidateStage', this.onInvalidateStage.bind(this));
     };
     
+    /**
+     * Handler for the message from stage
+     * @this {TGE}
+     * @private
+     */
     TGE.prototype.onInvalidateStage = function(key, value) {
+        "use strict";
         if (this.activeStage) {
-            if (this.activeStage.name === value) {
-                this.forceRedraw = true;
+            if (this.activeStage['name'] === value) {
+                forceRedraw = true;
             }
         }
     };
@@ -41,89 +63,93 @@
     /**
      * Start the game loop
      * @this {TGE}
-     * @export
      */
-    TGE.prototype.start = function() {
-        if (!this.initialized) return;
+    TGE.prototype['start'] = function () {
+        "use strict";
+        if (!initialized) return;
 
-        if (!this.running) {
-            this.rAF = w.requestAnimationFrame(this.frame);
+        if (!running) {
+            rAF = w.requestAnimationFrame(this.frame);
         }
 
-        this.running = true;
+        running = true;
     };
 
     /**
      * Stop the game loop
      * @this {TGE}
-     * @export
      */
-    TGE.prototype.stop = function() {
-        if (this.running) {
-            if (this.rAF) {
-                w.cancelAnimationFrame(this.rAF);
+    TGE.prototype['stop'] = function() {
+        "use strict";
+        if (running) {
+            if (rAF) {
+                w.cancelAnimationFrame(rAF);
             }
         }
 
-        this.rAF = 0;
-        this.running = false;
-    },
+        rAF = 0;
+        running = false;
+    };
 
     /**
      * Game loop body
      * @param {number}  time     frame timestamp
-     * @private
      * @this {TGE}
      */
     TGE.prototype.frame = function(time) {
-        var dt = time - this.time;
+        "use strict";
+        if (_fps) _fps['tick']();
 
-        if (this.ttu - dt > 0 && !this.forceRedraw) {
+        var dt = time - utime;
+
+        if (ttu - dt > 0 && !forceRedraw) {
             // nothing to update yet
-            this.rAF = w.requestAnimationFrame(this.frame);
+            rAF = w.requestAnimationFrame(this.frame);
 
             return;
         }
 
         // store last update time
-        this.time = time;
+        utime = time;
         
         // update and render the stage
-        this.ttu = this.update(dt);
-        this.render();
+        ttu = this.updateFrame(dt);
+        this.renderFrame();
 
         // request next frame update
-        this.rAF = w.requestAnimationFrame(this.frame);
+        rAF = w.requestAnimationFrame(this.frame);
     };
 
     /**
      * Called internally from game loop body to update current stage
      * @param {number}  dt      time difference from last update
      * @return {number}         Return time difference (in ms) to next update
-     * @protected
+     * @private
      * @this {TGE}
      */
-    TGE.prototype.update = function(dt) {
+    TGE.prototype.updateFrame = function(dt) {
+        "use strict";
         if (this.activeStage) {
-            return this.activeStage.update(dt);
+            return this.activeStage['update'](dt);
         }
         return 16;
     };
 
     /**
      * Called internally from game loop body to render current stage
-     * @protected
+     * @private
      * @this {TGE}
      */
-    TGE.prototype.render = function() {
+    TGE.prototype.renderFrame = function() {
+        "use strict";
         if (this.activeStage) {
             // redraw canvas only if required
-            if (this.activeStage.redraw || this.forceRedraw) {
-                this.activeStage.render();
+            if (this.activeStage['redraw'] || forceRedraw) {
+                this.activeStage['render']();
             }
         }
         
-        this.forceRedraw = false;
+        forceRedraw = false;
     };
     
     /**
@@ -133,9 +159,10 @@
      * @this {TGE}
      * @export
      */
-    TGE.prototype.addStage = function(name, stage) {
-        if (!this.stages[name]) {
-            this.stages[name] = stage;
+    TGE.prototype['addStage'] = function(name, stage) {
+        "use strict";
+        if (!stages[name]) {
+            stages[name] = stage;
             return true;
         }
         
@@ -148,10 +175,11 @@
      * @return {Stage|undefined}    Returns Stage objects or undefined, if specified stage not found
      * @export
      */
-    TGE.prototype.getStage = function(name) {
-        if (!this.stages[name]) return undefined;
+    TGE.prototype['getStage'] = function(name) {
+        "use strict";
+        if (!stages[name]) return undefined;
         
-        return this.stages[name];
+        return stages[name];
     };
     
     /**
@@ -161,25 +189,26 @@
      * @this {TGE}
      * @export
      */
-    TGE.prototype.activateStage = function(name) {
+    TGE.prototype['activateStage'] = function (name) {
+        "use strict";
         if (this.activeStage) {
-            this.activeStage.deactivate();
+            this.activeStage['deactivate']();
             
             this.activeStage = undefined;
         }
         
-        if (this.stages[name]) {
-            this.activeStage = this.stages[name];
+        if (stages[name]) {
+            this.activeStage = stages[name];
 
-            this.activeStage.activate();
+            this.activeStage['activate']();
             
-            this.activeStage.redraw = true;
+            this.activeStage['redraw'] = true;
         }
         
         return this.activeStage !== undefined;
     };
-
-    TGE.bus = undefined;
+    
+    TGE['bus'] = undefined;
 
     w['TiledGameEngine'] = TGE;
 

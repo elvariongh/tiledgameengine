@@ -8,9 +8,9 @@
      * @param {boolean|undefined}       [autostart=true]    Indicates should assets loading be started on stage activation
      */
     function LoadingStage(assetManager, screen, autostart) {
-        TGE.Stage.call(this, 'LoadingStage', assetManager, screen);
+        TiledGameEngine['Stage'].call(this, 'LoadingStage', assetManager, screen);
 
-        this.am = this.am ? this.am : new TGE.Assets();
+        this['am'] = this['am'] ? this['am'] : new TiledGameEngine['Assets']();
         
         this.progress = 0;
         this.autostart = autostart !== undefined ? autostart : true;
@@ -45,22 +45,22 @@
     };
     
     // super-class inheritance
-    LoadingStage.prototype = Object.create(TGE.Stage.prototype);
+    LoadingStage.prototype = Object.create(TGE['Stage'].prototype);
     
     /**
      * Request new asset from server
      * @param {string}      name    Asset file name
      * @this {LoadingStage}
      */
-    LoadingStage.prototype.request = function(name) {
+    LoadingStage.prototype['request'] = function(name) {
         if (Array.isArray(name)) {
             for (var l = name.length; l--; ) {
-                this.am.request(name[l]);
+                this['am']['request'](name[l]);
                 
                 this.status[name[l]] = 0;
             }
         } else {
-            this.am.request(name);
+            this['am']['request'](name);
             this.status[name] = 0;
         }
     };
@@ -69,10 +69,10 @@
      * Initiates assets loading
      * @this {LoadingStage}
      */
-    LoadingStage.prototype.start = function() {
-        this.status['total'] = this.am.queue.length;
+    LoadingStage.prototype['start'] = function() {
+        this.status['total'] = this['am']['total']();
         
-        this.am.download( this.fnDone, this.fnProgress );
+        this['am']['download']( this.fnDone, this.fnProgress );
         
         this.progress = 0;
         
@@ -84,51 +84,48 @@
         
         this.progress = ~~(this.progress / this.status['total']);
 
-        if (this.screen) {
-            // clear screen
-            this.screen.clear();
-            
-            // move viewport to initial position
-//            this.screen.move(-251, -52);
-
-            // set CTX properties once
-            var ctx = this.screen.getLayer(1);
-            ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.25)';
-            ctx.lineWidth = 1;
-            
-            ctx = this.screen.getLayer(2);
-            ctx.textAlign = 'center'
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-
-            this.redraw = true;
-            this.fullRender = true;
-            TGE.bus.notify('invalidateStage', this.name);
-        }
-    };
-    
-    LoadingStage.prototype.onViewportResize = function(key, value) {
-        TiledGameEngine.Stage.prototype.onViewportResize.call(this);
+        if (!this['screen']) return;
         
+        // clear screen
+        this['screen']['clear']();
+
         // set CTX properties once
-        var ctx = this.screen.getLayer(1);
+        var ctx = this['screen']['getLayer'](1);
         ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
         ctx.fillStyle = 'rgba(255, 0, 0, 0.25)';
         ctx.lineWidth = 1;
         
-        ctx = this.screen.getLayer(2);
+        ctx = this['screen']['getLayer'](2);
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+
+        this['redraw'] = true;
+        this.fullRender = true;
+        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
+    };
+    
+    LoadingStage.prototype['onViewportResize'] = function(key, value) {
+        TiledGameEngine['Stage'].prototype['onViewportResize'].call(this);
+        
+        // set CTX properties once
+        var ctx = this['screen']['getLayer'](1);
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.25)';
+        ctx.lineWidth = 1;
+        
+        ctx = this['screen']['getLayer'](2);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
         
         // mark stage for redraw
+        this['redraw'] = true;
         this.fullRender = true;
-//        this.redraw = true;
-//        TGE.bus.notify('invalidateStage', this.name);
+        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
     };
     
-    LoadingStage.prototype.onViewportMove = function(key, value) {
+    LoadingStage.prototype['onViewportMove'] = function(key, value) {
         // ignore Viewport moving
 //        this.redraw = true;
 
@@ -142,10 +139,10 @@
     LoadingStage.prototype.fnDone = function() {
         this.progress = 100;
         
-        TGE.bus.notify('assetsLoaded');
+        TiledGameEngine['bus']['notify']('assetsLoaded');
 
         // mark stage for redraw
-        this.redraw = true;
+        this['redraw'] = true;
     };
     
     /**
@@ -170,21 +167,21 @@
         this.progress = ~~(this.progress / this.status['total']);
 
         // mark stage for redraw
-        this.redraw = true;
+        this['redraw'] = true;
     };
     
     /**
      * Activate stage. If autostart is switched on - assets loading will start
      */
-    LoadingStage.prototype.activate = function() {
-        TiledGameEngine.Stage.prototype.activate.call(this);
+    LoadingStage.prototype['activate'] = function() {
+        TiledGameEngine['Stage'].prototype['activate'].call(this);
         
-        if (this.screen.layers < 3) {
-            this.screen.addLayer(3 - this.screen.layers);
+        if (this['screen']['layers'] < 3) {
+            this['screen']['addLayer'](3 - this['screen']['layers']);
         }
 
         if (this.autostart) {
-            this.start();
+            this['start']();
         }
 
         this.fullRender = true;
@@ -205,10 +202,10 @@
      * @param {number}  dt      time difference from last update
      * @return {number}         Return time difference (in ms) to next update
      */
-    LoadingStage.prototype.update = function(dt) {
+    LoadingStage.prototype['update'] = function(dt) {
         if (this.progress < 100) {
             // mark stage as invalid - redraw required
-            this.redraw = true;
+            this['redraw'] = true;
 
             return 500; // 2 FPS is enough for the loading stage
         } else {
@@ -219,20 +216,18 @@
     /**
      * Show progress information to user
      */
-    LoadingStage.prototype.render = function() {
-        if (!this.active) return;
-        
+    LoadingStage.prototype['render'] = function() {
         // mark stage as up to date - no redraw needed
         this.redraw = false;
 
-        if (!this.screen) return;
+        if (!this['screen'] || !this['active']) return;
 
         // viewport array structure: [left, top, width, height, visible]
-        var vp = this.screen.viewport,
+        var vp = this['screen']['viewport'],
             ctx;
         
         if (this.fullRender) {
-            ctx = this.screen.getLayer(0);
+            ctx = this['screen']['getLayer'](0);
             
             ctx.clearRect(0, 0, vp[2], vp[3]);
 
@@ -242,7 +237,7 @@
         }
 
         // render progress bar
-        ctx = this.screen.getLayer(1);
+        ctx = this['screen']['getLayer'](1);
 //        ctx.clearRect(0, 0, vp[2], vp[3]);
 /*        
         ctx.fillRect(260 + vp[0], 60 + vp[3]/2 - 10 + vp[1], (vp[2]-20) * this.progress / 100, 20);
@@ -253,7 +248,7 @@
         ctx.roundRect(vp[2]/2 - this.img.width/2, vp[3]/2 + this.img.height/2 + 20, this.img.width, 20, 20).stroke();
         ctx.roundRect(vp[2]/2 - this.img.width/2, vp[3]/2 + this.img.height/2 + 20, this.img.width * this.progress / 100, 20, 20).fill();
         
-        ctx = this.screen.getLayer(2);
+        ctx = this['screen']['getLayer'](2);
         ctx.clearRect(vp[2]/2 - this.img.width/2, vp[3]/2 + this.img.height/2 + 20, this.img.width, 20, 20);
         ctx.fillText(this.progress + '% Loaded', vp[2]/2, vp[3]/2 + this.img.height/2 + 30, this.img.width-40);
         

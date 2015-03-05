@@ -4,7 +4,7 @@ function Game() {
     TiledGameEngine.call(this);
     
     // create canvas in the #viewport container
-    this.screen = new TiledGameEngine.Screen('#viewport', window.innerWidth, window.innerHeight);
+    this.screen = new TiledGameEngine.ViewPort('#viewport', window.innerWidth, window.innerHeight);
 
     // set "world" background
     this.screen.setBGColor('black');

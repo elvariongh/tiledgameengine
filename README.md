@@ -1,5 +1,8 @@
 # Tiled Game Engine
-Fast front end game engine for tile based games (RPG, Platformers, strategies and etc.)<img src="https://raw.githubusercontent.com/elvariongh/tiledgameengine/master/logo.png" />
+Fast front end game engine for tile based games (RPG, Platformers, strategies and etc.)
+
+
+<img src="https://raw.githubusercontent.com/elvariongh/tiledgameengine/master/logo.png" />
 
 
 #What is it about

@@ -1,6 +1,6 @@
 # Tiled Game Engine
-<center><img src="https://raw.githubusercontent.com/elvariongh/tiledgameengine/master/logo.png" /></center>
-Fast front end game engine for tile based games (RPG, Platformers, strategies and etc.)
+Fast front end game engine for tile based games (RPG, Platformers, strategies and etc.)<img src="https://raw.githubusercontent.com/elvariongh/tiledgameengine/master/logo.png" />
+
 
 #What is it about
 <b>Tiled Game Engine</b> is a game engine aimed to create isometric/orthogonal HTML5 games. Maps or levels for that engine can be created using <a href="http://http://www.mapeditor.org/" target="_blank">Tiled Map Editor</a>.

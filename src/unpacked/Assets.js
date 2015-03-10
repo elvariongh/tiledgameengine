@@ -1,3 +1,4 @@
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     /**
      * @constructor
@@ -45,7 +46,7 @@
         
     Assets.prototype.fnError = function(event) {
         ++this.errors;
-        
+
         if (this['completed']()) {
             this.fnFinish();
         }
@@ -58,10 +59,10 @@
         
         img.onload = function(e) {
             // Clean up after yourself.
-            window.URL.revokeObjectURL(img.src);
+            w.URL.revokeObjectURL(img.src);
         };
         
-        img.src = window.URL.createObjectURL(blob);
+        img.src = w.URL.createObjectURL(blob);
         
         return img;
     };
@@ -86,23 +87,28 @@
     Assets.prototype.fnLoad = function(xhr) {
         xhr = xhr.target;
         
-        var type = xhr.getResponseHeader('content-type'),
-            r;
+        if (xhr.status !== 404) {
+            var type = xhr.getResponseHeader('content-type'),
+                r;
 
-        if (type.indexOf('image') !== -1) {
-            r = this.fnImageLoad(xhr.response, type);
-            this.success++;
-        } else if (type.indexOf('json') !== -1) {
-            r = this.fnJSONLoad(xhr.response);
-            this.success++;
-        } else {
-            console.warn('Unknown asset type', type);
-            r = xhr.response;
+            if (type.indexOf('image') !== -1) {
+                r = this.fnImageLoad(xhr.response, type);
+                this.success++;
+            } else if (type.indexOf('json') !== -1) {
+                r = this.fnJSONLoad(xhr.response);
+                this.success++;
+            } else {
+                console.warn('Unknown asset type', type);
+                r = xhr.response;
+                
+                ++this.errors;
+            }
             
+            this.cache[xhr.url] = r;
+        } else {
             ++this.errors;
+            console.warn('Asset not found (404)', xhr.url);
         }
-        
-        this.cache[xhr.url] = r;
 
         if (this.cbProgress) {
             this.cbProgress(xhr.url, 100);

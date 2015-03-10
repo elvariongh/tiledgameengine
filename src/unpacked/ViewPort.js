@@ -1,3 +1,4 @@
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     /**
      * @constructor
@@ -29,8 +30,8 @@
 
         // store viewport reference and set initial css styles
         this.domViewport = document.querySelector(tag);
-        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
-//        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
+//        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
+        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
 
 //        var clrect = this.domViewport.getClientRects();
         
@@ -38,13 +39,13 @@
         this.offsetY  = 0;// clrect[0].top;
         
         // desktop only events: resize, mousedown, mouseup, mousemove
-		window.addEventListener('resize', throttle(this.onResize, 64, this));
-        this.domViewport.addEventListener('mousedown',  throttle(this.onMouseDown,  16, this));
-        this.domViewport.addEventListener('mouseup',    throttle(this.onMouseUp,    16, this));
-        this.domViewport.addEventListener('mousemove',  throttle(this.onMouseMove,  64, this));
-        this.domViewport.addEventListener('mouseout',   throttle(this.onMouseUp,    16, this));
+		window.addEventListener('resize', throttle(this.onResize, 64, this), true);
+        this.domViewport.addEventListener('mousedown',  throttle(this.onMouseDown,  16, this), true);
+        this.domViewport.addEventListener('mouseup',    throttle(this.onMouseUp,    16, this), true);
+        this.domViewport.addEventListener('mousemove',  throttle(this.onMouseMove,  64, this), true);
+        this.domViewport.addEventListener('mouseout',   throttle(this.onMouseUp,    16, this), true);
         
-        document.addEventListener('keydown', this.onKeyDown.bind(this));
+        document.addEventListener('keydown', this.onKeyDown.bind(this), true);
         
         // create canvas elements inside container
         this['addLayer'](2);
@@ -221,7 +222,8 @@
     ViewPort.prototype.onResize = function(e) {
         if (!document.fullscreenEnabled) {
         
-            this['resize'](e.target.innerWidth - this.dWidth, e.target.innerHeight - this.dHeight);
+//            this['resize'](e.target.innerWidth - this.dWidth, e.target.innerHeight - this.dHeight);
+            this['resize'](e.target.innerWidth, e.target.innerHeight);
 
             var clrect = this.domViewport.getClientRects();
             this.offsetX  = clrect[0].left;
@@ -245,7 +247,7 @@
         
         this.domViewport.style.width = width + 'px';
         this.domViewport.style.height = height + 'px';
-        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
+//        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
 
         // this.boundingBox[0] = -width;
         // this.boundingBox[1] = -height;
@@ -276,8 +278,8 @@
             if (visible) {
                 setTimeout((function f() {         
                     var clrect = this.domViewport.getClientRects();
-                        this.offsetX  = clrect[0].left;
-                        this.offsetY  = clrect[0].top;
+                    this.offsetX  = clrect[0].left;
+                    this.offsetY  = clrect[0].top;
                 }).bind(this), 0);
             }
         }
@@ -363,8 +365,8 @@
         
         while(count--) {
             
-//            t += '<canvas style="position:fixed; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
-            t += '<canvas style="position:absolute; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
+            t += '<canvas style="position:fixed; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
+//            t += '<canvas style="position:absolute; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
             
             ++i;
         }

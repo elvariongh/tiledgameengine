@@ -1,24 +1,40 @@
-(function(w, TGE) {
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+(function(TGE) {
+    "use strict";
+
+    /**
+     * @constructor
+     */
     function TiledMap(assetManager, asset) {
-        this.asset = asset;
+        this['asset'] = asset;
         
-        this.am = assetManager;
+        this['assetsManager'] = assetManager;
         
         this['ready'] = false;
         
         this['layers'] = [];
+        this['layerscnt'] = 0;
+        this['entitiesLayer'] = 0;
         
         this['tilesets'] = []
         
         this['tilewidth'] = 64;
         this['tileheight'] = 32;
         this['bgcolor'] = '#000';
+        
+        this['objects'] = [];
     };
     
-    TiledMap.prototype['parse'] = function() {
-        if (!this.am) return false;
+    TiledMap.prototype['parse'] = function () {
+        if (this['ready']) {
+            TGE['bus']['notify']('tmxMapParsed');
+            
+            return true;
+        }
+    
+        if (!this['assetsManager']) return false;
         
-        var json = this.am.get(this.asset),
+        var json = this['assetsManager'].get(this['asset']),
             arr, item, i, j, l, m, data,
             idx,                                        // {number}     tile index
             tx, ty,                                     // {number}     tile x and tile y
@@ -39,19 +55,21 @@
             item['cols'] =      ~~(item['imagewidth'] / item['tilewidth']);
             item['lastgid'] =   ~~(item['firstgid'] + item['rows'] * item['cols'])-1;
 
-//            item['image'] =     this.am.get(item['image']);
-            
             delete item['imageheight'];
             delete item['imagewidth'];
         }
         
         json['tilesets'] = arr;
+        
+        TGE['bus']['notify']('tmxMapParseProgress', 1);
 
         // compress layer data and remove server-side and development layers
         arr = json['layers'];
         
         m = arr.length;
         i = 0;
+        
+        var animatedTiles = [];
         
         for (;i < m;++i) {
             item = arr[i];
@@ -63,9 +81,8 @@
                 
                 item['screen'] = new Int16Array(item['data'].length*5);
                 
-                // check, if this layer need to be rendered
-                
                 if (item['properties']) {
+                    // check, if this layer need to be rendered
                     if (item['properties']['render']) {
                         if (item['properties']['render'] === '0' ||
                             item['properties']['render'] === 'false') {
@@ -75,12 +92,31 @@
                             continue;
                         }
                     }
+                    
+                    // check, if this layer need to be rendered in separate canvas
+                    if (item['properties']['mergeWithLayer']) {
+                        if (item['properties']['mergeWithLayer'] === item['name']) {
+                            item['ctxlayer'] = lcnt++;
+                        } else {
+                            for (j = 0; j < m; j++) {
+                                if (arr[j]['name'] === item['properties']['mergeWithLayer']) {
+                                    item['ctxlayer'] = j;
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        item['ctxlayer'] = lcnt++;
+                    }
                 } else {
-                    item['properties'] = [];
+                    item['properties'] = {};
+                    item['ctxlayer'] = lcnt++;
                 }
                 
                 item['properties']['render'] = 1;
-                item['ctxlayer'] = lcnt;
+                
+                item['tilewidth'] = json['tilewidth'];
+                item['tileheight'] = json['tileheight'];
                 
                 // pre-process tileset id for each tile
                 data = item['data'];
@@ -91,35 +127,34 @@
                     
                     tsidx = json['tilesets'].length;
                     
-                    tileset;
-                    
                     for (;tsidx--;) {
                         tileset = json['tilesets'][tsidx];
                         
                         if (idx >= tileset['firstgid'] && idx <= tileset['lastgid']) break;
                     }
                     
-                    // no tilesed found for that layer - hide layer and make next itteration
+                    // no tileset found for that layer - hide layer and make next itteration
                     if (tsidx < 0) {
                         item['visible'] = 0;
                         continue;
                     }
                     
-                    item['screen'][j*5+0] = tsidx;
+                    if (tileset['tilewidth'] > item['tilewidth']) item['tilewidth'] = tileset['tilewidth'];
+                    if (tileset['tileheight'] > item['tileheight']) item['tileheight'] = tileset['tileheight'];
                     
                     // get tile number in this tileset
                     idx -= tileset['firstgid'];
                     
                     // find tile coordinates in the image map
                     imgx = ~~(idx % tileset['cols']) * tileset['tilewidth'];
-                     imgy = ~~(idx / tileset['cols']) * tileset['tileheight'];
+                    imgy = ~~(idx / tileset['cols']) * tileset['tileheight'];
                     
                     // convert tile coordinates to screen coordinates
                     tx = ~~(j % item['width']);
                     ty = ~~(j / item['width']);
                     
                     scrx = (tx - ty) * json['tilewidth'] / 2;
-                     scry = (tx + ty) * json['tileheight'] / 2;
+                    scry = (tx + ty) * json['tileheight'] / 2;
                     
                     // adjust tile position, if any
                     if (tileset['tileoffset']) {
@@ -131,17 +166,30 @@
                     scry += json['tileheight'];
                     scrx -= json['tilewidth']/2;
                     
+                    item['screen'][j*5+0] = tsidx;
                     item['screen'][j*5+1] = imgx;
                     item['screen'][j*5+2] = imgy;
                     item['screen'][j*5+3] = scrx;
                     item['screen'][j*5+4] = scry;
+                    
+                    // check if tile is animated
+                    if (tileset['tiles']) { 
+                        // this tileset has animated tiles
+                        if (tileset['tiles'][idx]) {
+                            // current tileset is animated tile - create tile enitity data
+                            animatedTiles[animatedTiles.length] = { 'type': 'tile',
+                                                                    'layer': i,
+                                                                    'id': j,
+                                                                    'x': tx,
+                                                                    'y': ty };
+                        }
+                    }
                 }
-                
-                ++lcnt;
             }
         }
-        
         json['layers'] = arr;
+
+        TGE['bus']['notify']('tmxMapParseProgress', 2);
 
         // store references for map data
         this['layers'] = json['layers'];
@@ -157,6 +205,31 @@
         
         this['layerscnt'] = lcnt;
         
+        this['width'] = +json['width'];
+        this['height'] = +json['height'];
+        
+        TGE['bus']['notify']('tmxMapParseProgress', 3);
+        
+        // create entities from tilelayer
+        if (animatedTiles.length > 0) {
+            for (i = 0, m = animatedTiles.length; i < m; ++i) {
+                var obj = TGE.EntitiesFactory.create(animatedTiles[i], this['assetsManager'], this);
+                if (obj) {
+                    this['objects'][this['objects'].length] = obj;
+                }
+            }
+            
+            this['entitiesLayer'] = lcnt++;
+            this['layerscnt'] = lcnt;
+        }
+
+        TGE['bus']['notify']('tmxMapParseProgress', 4);
+
+        // sorting entities
+        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
+        
+        TGE['bus']['notify']('tmxMapParseProgress', 5);
+
         this['ready'] = 1;
         
         TGE['bus']['notify']('tmxMapParsed');
@@ -164,11 +237,12 @@
         return true;
     };
     
-    TiledMap.prototype['getAssets'] = function() {
-        var json = this.am.get(this.asset);
+    TiledMap.prototype['getAssets'] = function getAssets() {
+        var json = this['assetsManager'].get(this['asset']);
         
         if (!json) return [];
         
+        // get tile sets images
         var tilesets = json['tilesets'], 
             imgs = [],
             tileset;
@@ -196,9 +270,33 @@
         
         json['tilesets'] = tilesets;
         
+        // get units images
+        var layer, obj, j;
+        i = json['layers'].length;
+        for (; i--;) {
+            layer = json['layers'][i];
+            
+            if (layer['type'] === 'objectgroup') {
+                j = layer['objects'].length;
+                
+                for (; j--;){
+                    obj = layer['objects'][j];
+                    
+                    if (obj['type'] === 'unit') {
+                        if (obj['properties']) {
+                            if (obj['properties']['img'] && obj['properties']['inf']) {
+                                imgs[imgs.length] = obj['properties']['img'];
+                                imgs[imgs.length] = obj['properties']['inf'];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
         return imgs;
     };
     
     TGE['TiledMap'] = TiledMap;
 
-})(window, TiledGameEngine);
+})(TiledGameEngine);

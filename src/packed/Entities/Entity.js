@@ -1,0 +1,2 @@
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+(function(a){function d(){this.map=this.am=void 0;this.x=this.y=this.z=0;this.name="";this.img=void 0;this.redraw=!1}d.prototype.init=function(b,e,c){this.am=e;this.map=c;this.x=b.x||0;this.y=b.y||0;this.z=this.x+20*this.y*c.width;this.name=b.name;this._data=b;this.redraw=this.visible=!0};d.prototype.update=function(){return 1E3};d.prototype.render=function(){this.redraw&&(this.visible&&this.img)&&(this.redraw=!1)};a.EntitiesFactory.register("Entity",d)})(TiledGameEngine);

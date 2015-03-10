@@ -1,4 +1,5 @@
-(function(w, TGE) {
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+(function(TGE) {
     // @constructor
     // Publish-Subscruber pattern implementation
     function PubSub() {
@@ -51,4 +52,4 @@
     };
     
     TGE['PubSub'] = PubSub;
-})(window, TiledGameEngine);
+})(TiledGameEngine);

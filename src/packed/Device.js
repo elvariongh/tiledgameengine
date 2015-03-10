@@ -1,0 +1,2 @@
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+(function() {var a=navigator;TiledGameEngine.Device=new function(){this.Android=a.userAgent.match(/Android/i);this.BlackBerry=a.userAgent.match(/BlackBerry/i);this.iOS=a.userAgent.match(/iPhone|iPad|iPod/i);this.Opera=a.userAgent.match(/Opera Mini/i);this.Windows=a.userAgent.match(/IEMobile/i);this.mobile=this.Android||this.BlackBerry||this.iOS||this.Opera||this.Windows}})();

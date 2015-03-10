@@ -1,5 +1,6 @@
+/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function() {
-    window.throttle = function(fn, threshold, scope) {
+    window['throttle'] = function(fn, threshold, scope) {
         threshold || (threshold = 250);
         var last,
             deferTimer;
@@ -50,9 +51,9 @@
 		window.cancelAnimationFrame = function ( id ) { clearTimeout( id ); };
 	}
 
-var CP = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+var CP = window['CanvasRenderingContext2D'] && CanvasRenderingContext2D.prototype;
 if (CP && CP.lineTo){
-  CP.dashedLine = function(x,y,x2,y2,dashArray){
+  CP['dashedLine'] = function(x,y,x2,y2,dashArray){
     if (!dashArray) dashArray=new Uint8Array([4,2]);
     if (dashLength==0) dashLength = 0.001; // Hack for Safari
     var dashCount = dashArray.length;
@@ -77,8 +78,8 @@ if (CP && CP.lineTo){
   }
 }
 
-if (CP && !CP.roundRect) {
-    CP.roundRect = function (x, y, w, h, r) {
+if (CP && !CP['roundRect']) {
+    CP['roundRect'] = function (x, y, w, h, r) {
       if (w < 2 * r) r = w / 2;
       if (h < 2 * r) r = h / 2;
       this.beginPath();

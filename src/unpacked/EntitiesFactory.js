@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     "use strict";
 
@@ -20,11 +20,11 @@
             ent['init'].apply(ent, arguments);
             
             return ent;
-        } else if (this['entity']) {
+        /* } else if (this['entity']) {
             var ent = new this['entity']();
             ent['init'].apply(ent, arguments);
             
-            return ent;
+            return ent; */
         }
         
         return undefined;

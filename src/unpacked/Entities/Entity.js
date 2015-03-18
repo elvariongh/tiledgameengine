@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     "use strict";
     /** 
@@ -18,7 +18,7 @@
     };
     
     /** 
-     *  Initialize entity
+     *  Initialize entity, parse entity data and prepare other entity-related stuff
      *  @param {object} data            Entity initialization data object
      *  @param {object} assetManager    Reference to the TiledGameEngine.Assets instance
      *  @param {object} map             Reference to the TiledGameEngine.TiledMap instance
@@ -40,18 +40,21 @@
     };
     
     /**
-     *  @param {number} dt          Time difference from previous call
-     *  @param {number} time        Time of current call
-     *  @param {array}  viewport    TypedArray with view port position and dimenstion: [left, top, width, height, visible]
+     *  Update entity state and return time till next update (in ms)
+     *  @param  {number} dt          Time difference from previous call
+     *  @param  {number} time        Time of current call
+     *  @param  {array}  viewport    TypedArray with view port position and dimension: [left, top, width, height, visible]
+     *  @return {number} Time till next update
      */
     Entity.prototype['update'] = function(dt, time, viewport) {
         return 1000;
     };
     
     /**
+     *  Render entity to specified canvas
      *  @param {object} ctx         CanvasContext to draw in
      *  @param {object} stage       Reference to current active stage
-     *  @param {array}  viewport    TypedArray with view port position and dimenstion: [left, top, width, height, visible]
+     *  @param {array}  viewport    TypedArray with view port position and dimension: [left, top, width, height, visible]
      */
     Entity.prototype['render'] = function(ctx, stage, viewport) {
         if (!this['redraw'] || !this['visible'] || !this['img']) return;
@@ -59,5 +62,6 @@
         this['redraw'] = false;
     };
     
+    // Register enitity type in the @EntitiesFactory
     TGE['EntitiesFactory']['register']('Entity', Entity);
 })(TiledGameEngine);

@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     /**
      * Game stage basic class
@@ -62,13 +62,13 @@
     Stage.prototype['onViewportResize'] = function(key, value) {
         // mark stage for redraw
         this['redraw'] = true;
-        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
+        TGE['bus']['notify']('invalidateStage', this['name']);
     };
 
     Stage.prototype['onViewportMove'] = function(key, value) {
         // mark stage for redraw
         this['redraw'] = true;
-        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
+        TGE['bus']['notify']('invalidateStage', this['name']);
     };
 
     /**
@@ -77,8 +77,8 @@
     Stage.prototype['deactivate'] = function() {
         this['active'] = false;
 
-        TiledGameEngine['bus']['unsubscribe']('onViewportResize', this['sidResize']);
-        TiledGameEngine['bus']['unsubscribe']('onViewportMove', this['sidMove']);
+        TGE['bus']['unsubscribe']('onViewportResize', this['sidResize']);
+        TGE['bus']['unsubscribe']('onViewportMove', this['sidMove']);
 
         this['sidResize'] = this['sidMove'] = -1;
 
@@ -93,12 +93,12 @@
         this['active'] = true;
 
         // subscribe to Viewport events
-        this['sidResize'] = TiledGameEngine['bus']['subscribe']('onViewportResize', this['onViewportResize'].bind(this));
-        this['sidMove'] = TiledGameEngine['bus']['subscribe']('onViewportMove', this['onViewportMove'].bind(this));
+        this['sidResize'] = TGE['bus']['subscribe']('onViewportResize', this['onViewportResize'].bind(this));
+        this['sidMove'] = TGE['bus']['subscribe']('onViewportMove', this['onViewportMove'].bind(this));
         
         // mark stage for redraw
         this['redraw'] = true;
-        TiledGameEngine['bus']['notify']('invalidateStage', this['name']);
+        TGE['bus']['notify']('invalidateStage', this['name']);
     };
 
     Stage.prototype['offScreenRender'] = function (width, height, fn) {

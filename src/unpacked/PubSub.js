@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     // @constructor
     // Publish-Subscruber pattern implementation
@@ -25,7 +25,7 @@
             return;
 
 //          var index = this.handlers[key].indexOf(handler)
-
+// @2Do: replace slice with other alg
           if (~sid) {
             this.handlers[key].splice(sid, 1)
             

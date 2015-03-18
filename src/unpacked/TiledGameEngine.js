@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.1 - 10th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function (w) {
     "use strict";
 
@@ -21,7 +21,7 @@
     function TGE() {
         this.activeStage = undefined;   // Current active stage name
         
-        this['debug'] = false;
+        this['debug'] = true;
     }
 
     /**
@@ -40,7 +40,7 @@
         TGE['bus']['subscribe']('invalidateStage', this.onInvalidateStage.bind(this));
         
         if (this['debug']) {
-//            fpsmt = (typeof FPSMeter !== undefined) ? new FPSMeter(document.getElementById('viewport'), {'graph': 1, 'heat': 1, 'theme': 'transparent'}) : undefined;
+            fpsmt = (typeof FPSMeter !== undefined) ? new FPSMeter(document.getElementById('viewport'), {'graph': 1, 'heat': 1, 'theme': 'transparent'}) : undefined;
 //            fpsmt = (typeof FPSMeter !== undefined) ? new FPSMeter() : undefined;
         }
         

@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.3 - 19th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     /**
      * @constructor
@@ -30,8 +30,8 @@
 
         // store viewport reference and set initial css styles
         this.domViewport = document.querySelector(tag);
-//        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
-        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
+        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
+//        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
 
 //        var clrect = this.domViewport.getClientRects();
         
@@ -47,6 +47,20 @@
         
         document.addEventListener('keydown', this.onKeyDown.bind(this), true);
         
+        // touch events
+		if (TGE['Device'] && TGE['Device']['touch']) {
+            this.touchHistory = [];
+			this.domViewport.addEventListener("touchstart", 	throttle(this.touchHandler, 16, this), true);
+			this.domViewport.addEventListener("touchmove", 		throttle(this.touchHandler, 16, this), true);
+			this.domViewport.addEventListener("touchend", 		throttle(this.touchHandler, 16, this), true);
+			this.domViewport.addEventListener("touchcancel", 	throttle(this.touchHandler, 16, this), true);
+		}
+        
+        if (TGE['Device'] && TGE['Device']['mobile']) {
+            // disable page zoom on mobiles
+            document.getElementsByTagName('head')[0].appendChild('<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />');
+        }
+        
         // create canvas elements inside container
         this['addLayer'](2);
         
@@ -57,10 +71,64 @@
                 this.offsetY  = clrect[0].top;
             }
         }).bind(this), 0);
+        
+        this.profiling = 0;
     };
     
+	ViewPort.prototype.touchHandler = function(e) {
+        // stop default event processing
+        e.preventDefault();
+        
+        // get touch event
+		var touch = e.changedTouches[0],
+            type = e.type;
+		
+        // add this event to the touch history
+		this.touchHistory[this.touchHistory.length] = e.type;
+		
+        // analyze event sequences
+		if (this.touchHistory.length > 3) {
+			this.touchHistory.shift();
+		}
+		
+		var h = this.touchHistory;
+		var l = h.length;
+		if (l > 1) {
+			if (h[l-1] === "touchend") {
+				if (h[l-2] === "touchstart" || (l === 3 && h[l-3] === "touchstart")) {
+					type = "tap";
+				}			
+			} else if (h[l-1] === "touchmove") {
+				if (h[l-2] === "touchstart") { // ignore that event
+					return;
+				}
+			}
+		}
+
+        // simulate mouse events
+		var simulatedEvent = document.createEvent("MouseEvent");
+			simulatedEvent.initMouseEvent({
+			touchstart: "mousedown",
+			touchmove: "mousemove",
+			touchend: "mouseup",
+			tap: "click"
+		}[type], true, true, window, 1,
+			touch.screenX, touch.screenY,
+			touch.clientX, touch.clientY, false,
+			false, false, false, 0, null);
+
+		touch.target.dispatchEvent(simulatedEvent);
+	};
+
     ViewPort.prototype.onKeyDown = function(e) {
         switch (e.which) {
+            case 192: /* ~ */ {
+                if (this.profiling) console.profileEnd();
+                else console.profile();
+                
+                this.profiling ^= 1;
+            } break;
+            
             case 33 /* PageUp */: {
                 this.dnd[3] = -8;
                 this.dnd[4] = 0;
@@ -222,8 +290,7 @@
     ViewPort.prototype.onResize = function(e) {
         if (!document.fullscreenEnabled) {
         
-//            this['resize'](e.target.innerWidth - this.dWidth, e.target.innerHeight - this.dHeight);
-            this['resize'](e.target.innerWidth, e.target.innerHeight);
+            this['resize'](e.target.innerWidth - this.dWidth, e.target.innerHeight - this.dHeight);
 
             var clrect = this.domViewport.getClientRects();
             this.offsetX  = clrect[0].left;
@@ -247,7 +314,7 @@
         
         this.domViewport.style.width = width + 'px';
         this.domViewport.style.height = height + 'px';
-//        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
+        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
 
         // this.boundingBox[0] = -width;
         // this.boundingBox[1] = -height;
@@ -365,8 +432,8 @@
         
         while(count--) {
             
-            t += '<canvas style="position:fixed; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
-//            t += '<canvas style="position:absolute; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
+//            t += '<canvas style="position:fixed; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
+            t += '<canvas style="position:absolute; left: 0px; top: 0px; z-index: '+(i)+';" id="_tgelr'+(i)+'"></canvas>';
             
             ++i;
         }
@@ -459,13 +526,37 @@
         this.boundingBox[3] = +bottom;
     };
     
-    ViewPort.prototype['fullscreen'] = function() {
-        if (document.fullscreenEnabled) {
-            document.exitFullscreen();
-        } else {
-            this.domViewport.requestFullscreen();
+    /**
+     * Lock the screen orientation, if possible
+     * @param   {string}    val     Screen orientation value. Possible values:
+     *                              any                 The devices is able to be locked in any orientation it can assume
+     *                              natural             The device is in its natural orientation. For a smartphone this 
+     *                                                  usually means in its primary portrait mode (with the buttons in 
+     *                                                  direction of the ground).
+     *                              portrait            see #portrait-primary
+     *                              landscape           see #landscape-primary
+     *                              portrait-primary    The orientation is in the primary portrait mode with the buttons 
+     *                                                  at the bottom.
+     *                              portrait-secondary  The orientation is in the secondary portrait mode with the buttons 
+     *                                                  at the top (the device is down under)
+     *                              landscape-primary   The orientation is in the primary landscape mode with the buttons 
+     *                                                  at the right.
+     *                              landscape-secondary The orientation is in the secondary landscape mode with the buttons at the left.
+     */
+    ViewPort.prototype['lockOrientation'] = function(val) {
+        if (TGE['Device'] && TGE['Device']['orientation']) {
+            TGE['Device']['orientationLock'](val);
         }
     }
     
+    /**
+     * Release a previously set lock orientation
+     */
+    ViewPort.prototype['unlockOrientation'] = function() {
+        if (TGE['Device'] && TGE['Device']['orientation']) {
+            TGE['Device']['orientationUnlock']();
+        }
+    }
+
     TGE['ViewPort'] = ViewPort;
 })(window, TiledGameEngine);

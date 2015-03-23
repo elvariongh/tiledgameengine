@@ -1,4 +1,9 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/* History:
+ *	Who	When		Whan	Status	Description
+ *  @elvariongh	23 Mar, 2015	#1	Fixed	error and success counters now beeing reseted on download start
+ *
+ */
 (function(w, TGE) {
     /**
      * @constructor
@@ -56,14 +61,14 @@
         var blob = new Blob([data], {type: type});
 
         var img = new Image();
-        
+		
         img.onload = function(e) {
             // Clean up after yourself.
             w.URL.revokeObjectURL(img.src);
         };
         
         img.src = w.URL.createObjectURL(blob);
-        
+
         return img;
     };
         
@@ -133,8 +138,12 @@
     };
         
     function download(fnDone, fnProgress) {
+		// fix #1
+        this.success = 0;
+        this.errors = 0
+		// ~fix
+
         if (this.queue.length === 0) {
-            
             if (fnDone) {
                 fnDone();
             }

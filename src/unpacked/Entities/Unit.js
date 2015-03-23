@@ -1,4 +1,8 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/** History:
+ *	Who				When			What	Status	Description
+ *  @elvariongh		23 Mar, 2015	#2		Fixed	getAssets static method implementation added
+ */
 (function(w, TGE) {
     "use strict";
 
@@ -34,9 +38,13 @@
         // call super-class implementation
         TiledGameEngine['EntitiesFactory']['entity'].prototype['init'].call(this, data, assetManager, map);
 
-        this.img = assetManager.get(data['properties']['img']);
-
         this.imgName = data['properties']['img'];
+
+        this.img = assetManager.get(this.imgName);
+		
+		if (!this.img) {
+			throw('can not get image asset');
+		}
         
         this.animation = assetManager.get(data['properties']['inf']);
         
@@ -106,16 +114,31 @@
         
         this.scr = undefined;
         this.frame = undefined;
+		
+		this.selection = undefined;
     };
     
     Unit.prototype.update = function update(dt, time, viewport) {
         this.redraw = false;
         if (!this.animation || !this.img) {
+			console.log(time, this.name, 'no animation or image', this.animation, this.img);
+
+            this.img = this.am.get(this.imgName);
+
             return 1000;
         }
 
+		console.log(time, this.name, this.lasttime, this.frameIdx);
+
         if (time >= this.lasttime) {
             if (!this.lasttime) this.lasttime = time;
+			
+			this.dt = this.lasttime - time;
+			
+			if (this.dt > this.animation[this.state]['duration']*this.animation[this.state]['frames']) {
+				this.lasttime = time - this.dt % (this.animation[this.state]['duration']*this.animation[this.state]['frames']);
+			}
+			
             while (time >= this.lasttime) {
                 if (this.animation[this.state]['type'] === 'looped') {
                     this.frameIdx = (this.frameIdx + 1) % this.animation[this.state]['frames'];
@@ -146,26 +169,30 @@
         }
 
         this.dt = this.lasttime - time;
+		
+		if (!this.selection) {
+			this.selection = TGE.EntitiesFactory.retain('selection');
+			this.map.addEntity(this.selection);
+			this.map.moveEntity(this.selection, this.x, this.y);
+		}
     
-        if (!this.img) {
-            this.img = this.am.get(this.imgName);
-            
-            this.redraw = false;
-        }
-        
         // check if unit is visible
-        this.isVisible(viewport);
-        
-        if (!this.visible) {
+        if (!this.isVisible(viewport)) {
             this.redraw = false;
-            
+			this.selection.visible = false;
+            /*
             var r = ~~(this.animation[this.state]['duration'] * (this.animation[this.state]['frames'] - this.frameIdx) - 0*this.dt);
             
             this.frameIdx = 0;
-            
-//            console.log(this.name, 'update', r);
-            return r;
-        }
+
+			this.selection.visible = false;
+
+            return r; */
+        } else {
+			this.selection.visible = true;
+		}
+		
+		this.dt = Math.min(this.dt, this.selection.update(dt, time, viewport));
 
         return ~~(this.dt);
     };
@@ -194,6 +221,8 @@
             var scr = stage.tile2Scr( this.x, this.y);
             this.scr = new Int32Array([scr[0] - viewport[0], scr[1] - viewport[1] + ~~(this.map.tileheight/2)]);
         }
+		
+		this.selection.render(ctx, stage, viewport);
 
         this.frame = this.animation[this.state]['frame'][this.frameIdx][this.direction];
 
@@ -202,6 +231,19 @@
                                 this.scr[1] + viewport[1] - this.frame[5], 
                                 this.frame[2], this.frame[3]);
     };
+	
+	Unit.getAssets = function(obj) {
+		var assets = [];
+		if (obj['properties']) {
+			if (obj['properties']['img'] && obj['properties']['inf']) {
+				assets[assets.length] = obj['properties']['img'];
+				assets[assets.length] = obj['properties']['inf'];
+			}
+			return assets;
+		}
+		
+		return undefined;
+	};
     
     TGE.EntitiesFactory.register('unit', Unit);
 })(window, TiledGameEngine);

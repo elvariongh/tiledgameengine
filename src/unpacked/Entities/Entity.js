@@ -1,4 +1,8 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/** History:
+ *	Who				When			What	Status	Description
+ *  @elvariongh		23 Mar, 2015	#2		Fixed	getAssets static method interface added
+ */
 (function(TGE) {
     "use strict";
     /** 
@@ -24,6 +28,8 @@
      *  @param {object} map             Reference to the TiledGameEngine.TiledMap instance
      */
     Entity.prototype['init'] = function(data, assetManager, map) {
+		this['_type'] = data['type'];
+
         this['am'] = assetManager;
         this['map'] = map;
         
@@ -61,7 +67,10 @@
         
         this['redraw'] = false;
     };
-    
+
+	Entity['getAssets'] = function(obj) {
+		return undefined;
+	};
     // Register enitity type in the @EntitiesFactory
     TGE['EntitiesFactory']['register']('Entity', Entity);
 })(TiledGameEngine);

@@ -1,4 +1,9 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/** History:
+ *	Who				When			What	Status	Description
+ *  @elvariongh		23 Mar, 2015	#2		Fixed	Removed hardcode from getAssets for unit entities 
+ *													and now used EntitiesFactory::getAssets interface
+ */
 (function(TGE) {
     "use strict";
 
@@ -143,6 +148,9 @@
             l = item['objects'].length;
             for (j = 0; j < l; ++j) {
                 data = item.objects[j];
+				
+				if (!data['visible']) continue;
+				
                 animatedTiles[animatedTiles.length] = data;
             }
         }
@@ -243,6 +251,8 @@
         TGE['bus']['notify']('tmxMapParseProgress', 4);
 
         // check if some triggers should be executed while layers parsing
+        arr = json['layers'];
+        m = arr.length;
         for (i = 0; i < m; ++i) {
             item = arr[i];
             
@@ -309,7 +319,7 @@
                 
                 for (; j--;){
                     obj = layer['objects'][j];
-                    
+/*                    
                     if (obj['type'] === 'unit') {
                         if (obj['properties']) {
                             if (obj['properties']['img'] && obj['properties']['inf']) {
@@ -318,6 +328,13 @@
                             }
                         }
                     }
+
+*/
+					var as = TGE.EntitiesFactory['getAssets'](obj['type'], obj);
+					
+					if (as) {
+						imgs = imgs.concat(as);
+					}
                 }
             }
         }
@@ -350,7 +367,11 @@
                 y: ~~(j / layer['width'])
             };
             
-            this['objects'][this['objects'].length] = TGE['EntitiesFactory']['create'](d, this['assetsManager'], this);
+			var ent = TGE['EntitiesFactory']['create'](d, this['assetsManager'], this);
+			
+			if (!ent) continue;
+			
+            this['objects'][this['objects'].length] = ent;
         }
 
         // mark layer as converted and not attended to be rendered directly
@@ -358,6 +379,25 @@
         layer['converted'] = true;
     }
     
+	TiledMap.prototype.addEntity = function(ent) {
+		if (!ent) return;
+		
+		this['objects'][this['objects'].length] = ent;
+        // sorting entities
+        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
+	};
+	
+	TiledMap.prototype.moveEntity = function(ent, x, y) {
+		if (!ent) return;
+		
+		ent.x = x; ent.y = y;
+		ent.z = ent.x - 1 + ent.y * this.width * 20;
+		ent.scr = undefined;
+
+        // sorting entities
+        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
+	};
+	
     TGE['TiledMap'] = TiledMap;
 
 })(TiledGameEngine);

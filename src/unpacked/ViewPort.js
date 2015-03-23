@@ -20,8 +20,8 @@
         // viewport data storage [left, top, width, height, visible]
         this['viewport'] = new Int32Array([0, 0, width, height, false]);
         
-        // viewport DnD structure [startX, startY, dragging, dx, dy]
-        this.dnd = new Int32Array([0, 0, 0, 0, 0]);
+        // viewport DnD structure [startX, startY, dragging, dx, dy, pressed]
+        this.dnd = new Int32Array([0, 0, 0, 0, 0, 0]);
         
         this['layers'] = 0;
 
@@ -44,6 +44,7 @@
         this.domViewport.addEventListener('mouseup',    throttle(this.onMouseUp,    16, this), true);
         this.domViewport.addEventListener('mousemove',  throttle(this.onMouseMove,  64, this), true);
         this.domViewport.addEventListener('mouseout',   throttle(this.onMouseUp,    16, this), true);
+		this.domViewport.addEventListener('mouseclick',		throttle(this.onMouseClick,	32, this), true);
         
         document.addEventListener('keydown', this.onKeyDown.bind(this), true);
         
@@ -58,7 +59,9 @@
         
         if (TGE['Device'] && TGE['Device']['mobile']) {
             // disable page zoom on mobiles
-            document.getElementsByTagName('head')[0].appendChild('<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />');
+			var n = document.createDocumentFragment();
+			n.textContent = '<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />';
+			document.getElementsByTagName('head')[0].appendChild(n);
         }
         
         // create canvas elements inside container
@@ -111,7 +114,7 @@
 			touchstart: "mousedown",
 			touchmove: "mousemove",
 			touchend: "mouseup",
-			tap: "click"
+			tap: "mouseclick"
 		}[type], true, true, window, 1,
 			touch.screenX, touch.screenY,
 			touch.clientX, touch.clientY, false,
@@ -201,6 +204,11 @@
         }
     };
     
+	ViewPort.prototype.onMouseClick = function(e) {
+		console.log(this.dnd);
+		TGE['bus']['notify']('click', {x: e.clientX - this.offsetX, y: e.clientY - this.offsetY});
+	}
+	
     // mouse down handler - start dragging
     ViewPort.prototype.onMouseDown = function(e) {
         // stop event propagation
@@ -211,7 +219,8 @@
         // store initial mouse position
         this.dnd[0] = e.clientX - this.offsetX;
         this.dnd[1] = e.clientY - this.offsetY;
-        this.dnd[2] = true;
+        this.dnd[2] = false;
+		this.dnd[5] = true;
     };
     
     // mouse up and mouse out handler - stop dragging
@@ -221,6 +230,8 @@
         e.stopImmediatePropagation();
         e.stopPropagation();
         
+		this.dnd[5] = false;
+		
         // stop dragging
         if (this.dnd[2]) {
             this.dnd[2] = false;
@@ -245,7 +256,19 @@
                 // notify all subscribers
                 TGE['bus']['notify']('onviewportmove');
             }
-        }
+        } else {
+//			console.log('click');
+        // simulate mouse events
+			var simulatedEvent = document.createEvent("MouseEvent");
+				simulatedEvent.initMouseEvent({
+				tap: "mouseclick"
+			}['tap'], true, true, window, 1,
+				e.screenX, e.screenY,
+				e.clientX, e.clientY, false,
+				false, false, false, 0, null);
+
+			e.target.dispatchEvent(simulatedEvent);
+		}
     };
     
     // mouse move handler - drag
@@ -261,7 +284,8 @@
         // if mouse didn't changed its position - stop processing
         if (!this.dnd[3] && !this.dnd[4]) return;
 
-        if (this.dnd[2]) {
+        if (this.dnd[5]) {
+			this.dnd[2] = true;
             // update viewport coordinates
             if ((this['viewport'][0] + this.dnd[3] >= this.boundingBox[0] &&
                 this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2])) {

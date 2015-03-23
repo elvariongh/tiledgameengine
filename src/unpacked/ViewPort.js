@@ -1,4 +1,8 @@
-/*! TiledGameEngine v0.0.3 - 19th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/** History:
+ *	Who				When			What	Status	Description
+ *  @elvariongh		23 Mar, 2015	#3		Fixed	Replaced direct text insertion with document fragment
+ */
 (function(w, TGE) {
     /**
      * @constructor

@@ -1,5 +1,7 @@
 /*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
+    "use strict";
+	
     /**
      * Construct LoadingStage instance 
      * @constructor

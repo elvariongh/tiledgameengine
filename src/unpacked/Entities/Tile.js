@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     "use strict";
     /**
@@ -53,7 +53,7 @@
                     if (tileset['tileproperties'][idx]) {
                         if (tileset['tileproperties'][idx]['animated']) {
                             this.animated = (tileset['tileproperties'][idx]['animated'] === 'false' ||
-                                             tileset['tileproperties'][idx]['animated'] === 0) ? false : true;
+                                             tileset['tileproperties'][idx]['animated'] == 0) ? false : true;
                         }
                         
                         this.frame = +tileset['tileproperties'][idx]['startframe'] || 0;
@@ -98,8 +98,10 @@
     };
     
     Tile.prototype['update'] = function(dt, time, viewport) {
+        this['redraw'] = false;
+
         // lazy resource load check
-        if (!this.width) console.error('tile is not loaded');
+        if (!this.width) return 1000;//console.error('tile is not loaded');
 
         // check if entity is visible
         if (this['x'] + this.width + viewport[0] > 0 &&
@@ -110,8 +112,6 @@
         } else {
             this['visible'] = false;
         }
-
-        this['redraw'] = false;
 
         // check if new frame need to be drawn
         if (this.animated && this['visible']) {
@@ -150,5 +150,26 @@
         this['redraw'] = false;
     };
     
+    /**
+     *  Move tile to new position.
+     * @param   {number}    x           new X coordinate (in tiles)
+     * @param   {number}    y           new Y coordinate (in tiles)
+     */
+    Tile.prototype['move'] = function(x, y) {
+        x = +x; y = +y;
+        this['x'] = x;
+        this['y'] = y;
+        
+        this['z'] = x + y*this['map']['width']*20;
+        this['z'] -= ~~(this.height / this['map']['tileheight']);
+        
+        var scr = this['map']['layers'][this['layer']]['screen'];
+
+        this['x'] = scr[this.id*5+3] + ~~(this['map']['mapwidth']/2);
+        this['y'] = scr[this.id*5+4];
+
+        TGE['bus']['notify']('entityMoved');
+    };
+
     TGE['EntitiesFactory']['register']('tile', Tile);
 })(TiledGameEngine);

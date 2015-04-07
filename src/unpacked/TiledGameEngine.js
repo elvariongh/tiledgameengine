@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function (w) {
     "use strict";
 
@@ -34,8 +34,6 @@
         
         initialized = true;
         this.frame = this.frame.bind(this);
-
-        TGE['bus'] = new TGE['PubSub']();
 
         TGE['bus']['subscribe']('invalidateStage', this.onInvalidateStage.bind(this));
         

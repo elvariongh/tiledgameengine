@@ -1,8 +1,8 @@
-/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
- *	Who				When			What	Status	Description
- *  @elvariongh		23 Mar, 2015	#2		Fixed	Removed hardcode from getAssets for unit entities 
- *													and now used EntitiesFactory::getAssets interface
+ *  Who             When            What    Status  Description
+ *  @elvariongh     23 Mar, 2015    #2      Fixed   Removed hardcode from getAssets for unit entities 
+ *                                                  and now used EntitiesFactory::getAssets interface
  */
 (function(TGE) {
     "use strict";
@@ -12,22 +12,31 @@
      */
     function TiledMap(assetsManager, asset) {
         this['asset'] = asset;
-        
+
         this['assetsManager'] = assetsManager;
-        
+
         this['ready'] = false;
-        
+
         this['layers'] = [];
         this['layerscnt'] = 0;
         this['entitiesLayer'] = 0;
-        
         this['tilesets'] = []
-        
+
         this['tilewidth'] = 64;
         this['tileheight'] = 32;
         this['bgcolor'] = '#000';
-        
+
         this['objects'] = [];
+        this['lock'] = false;
+
+        this['graph'] = undefined;
+        this['astar'] = undefined;
+
+        TGE['bus']['subscribe']('entityReleased',   this.onEntityReleased.bind(this));
+        TGE['bus']['subscribe']('entityMoved',      this.onEntityMoved.bind(this));
+
+        this._objectsToRemove = [];
+        this['resortRequired'] = false;
     };
     
     TiledMap.prototype['parse'] = function () {
@@ -148,9 +157,9 @@
             l = item['objects'].length;
             for (j = 0; j < l; ++j) {
                 data = item.objects[j];
-				
-				if (!data['visible']) continue;
-				
+
+                if (!data['visible']) continue;
+
                 animatedTiles[animatedTiles.length] = data;
             }
         }
@@ -268,6 +277,7 @@
         
         TGE['bus']['notify']('tmxMapParseProgress', 5);
 
+        TGE['bus']['notify']('tmxMapParseProgress', 6);
         this['ready'] = 1;
         
         TGE['bus']['notify']('tmxMapParsed');
@@ -319,22 +329,12 @@
                 
                 for (; j--;){
                     obj = layer['objects'][j];
-/*                    
-                    if (obj['type'] === 'unit') {
-                        if (obj['properties']) {
-                            if (obj['properties']['img'] && obj['properties']['inf']) {
-                                imgs[imgs.length] = obj['properties']['img'];
-                                imgs[imgs.length] = obj['properties']['inf'];
-                            }
-                        }
-                    }
 
-*/
-					var as = TGE.EntitiesFactory['getAssets'](obj['type'], obj);
-					
-					if (as) {
-						imgs = imgs.concat(as);
-					}
+                    var as = TGE.EntitiesFactory['getAssets'](obj['type'], obj);
+
+                    if (as) {
+                        imgs = imgs.concat(as);
+                    }
                 }
             }
         }
@@ -342,7 +342,7 @@
         return imgs;
     };
     
-    TiledMap.prototype.convertToEntities = function(layerID) {
+    TiledMap.prototype['convertToEntities'] = function(layerID) {
         var json = this['assetsManager']['get'](this['asset']),
             layer = json['layers'][layerID],
             j = 0,
@@ -367,10 +367,10 @@
                 y: ~~(j / layer['width'])
             };
             
-			var ent = TGE['EntitiesFactory']['create'](d, this['assetsManager'], this);
-			
-			if (!ent) continue;
-			
+            var ent = TGE['EntitiesFactory']['create'](d, this['assetsManager'], this);
+
+            if (!ent) continue;
+
             this['objects'][this['objects'].length] = ent;
         }
 
@@ -379,25 +379,137 @@
         layer['converted'] = true;
     }
     
-	TiledMap.prototype.addEntity = function(ent) {
-		if (!ent) return;
-		
-		this['objects'][this['objects'].length] = ent;
-        // sorting entities
-        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
-	};
-	
-	TiledMap.prototype.moveEntity = function(ent, x, y) {
-		if (!ent) return;
-		
-		ent.x = x; ent.y = y;
-		ent.z = ent.x - 1 + ent.y * this.width * 20;
-		ent.scr = undefined;
+    TiledMap.prototype['initGraph'] = function(layerID) {
+        var json = this['assetsManager']['get'](this['asset']),
+            layer = json['layers'][layerID];
 
+        this.graph = new Graph(layer.data, this.width, this.height, {diagonal: true});
+        
+        this.astar = new AStar();
+    };
+    
+    /**
+     * Add new entity to the object list
+     * @param   {Entity}    ent Entity to be added
+     */
+    TiledMap.prototype['addEntity'] = function(ent) {
+        if (!ent) return;
+
+        this['objects'][this['objects'].length] = ent;
+        
+        this['resortRequired'] = true;
         // sorting entities
+//        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
+    };
+
+    /**
+     * Remove entity from the object list. If this entity is pooled it is up to developer to release it
+     * @param   {Entity}    ent Entity to be removed
+     */
+    TiledMap.prototype['removeEntity'] = function(ent) {
+        if (!ent) return;
+
+        for (var i = 0, l = this.objects.length; i < l; ++i) {
+            if (this.objects[i] === ent) {
+                this.objects.splice(i, 1)
+                break;
+            }
+        }
+        
+        this['resortRequired'] = true;
+    };
+
+    /**
+     * Move entity to the specified tile position. Each success call of that function will resorce object list
+     * @param   {Entity}    ent Entity to be moved
+     * @param   {Number}    x   X coordinate (in tiles)
+     * @param   {Number}    y   Y coordinate (in tiles)
+     */
+    TiledMap.prototype['moveEntity'] = function(ent, x, y) {
+        if (!ent) return;
+
+        ent.move(x, y);
+        
+        // sorting entities
+//        this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
+    };
+    
+    TiledMap.prototype['sortObjects'] = function() {
         this['objects'] = this['objects'].sort(function(a, b) { return a['z'] - b['z']; });
-	};
-	
+        this['resortRequired'] = false;
+    };
+
+    /**
+     * Find first entity in object list by specified coordinates
+     * @param   {Number}    x   X coordinate (in tiles)
+     * @param   {Number}    y   Y coordinate (in tiles)
+     * @return  {Entity|undefined}  Returns entity object, if such found, or undefined otherwise
+     */
+    TiledMap.prototype['getEntityByXY'] = function(x, y) {
+        if (x < 0 || y < 0) return undefined;
+        if (x >= this.width || y >= this.height) return undefined;
+
+        var i = 0, l = this['objects'].length;
+
+        for (; i < l; ++i) {
+            var obj = this['objects'][i];
+
+            if (obj['x'] === x && obj['y'] === y && obj['clickable']) return obj;
+        }
+
+        return undefined;
+    };
+
+    /**
+     * Lock objects array for changes. This routine should be used while stage update and 
+     * stage rendering, if it is expected some entities may be removed or added to the map
+     *
+     * It is up to developer to unlock objects' array using TiledMap::unlockObjects method
+     */
+    TiledMap.prototype['lockObjects'] = function() { this['lock'] = true; };
+    
+    /**
+     * Unlock previously locked objects array
+     */
+    TiledMap.prototype['unlockObjects'] = function() { this['lock'] = false; 
+        if (this._objectsToRemove.length) {
+            var i = 0, l = this._objectsToRemove.length;
+            for (; i < l; ++i) {
+                this.removeEntity(this._objectsToRemove[i]);
+            }
+            
+            this._objectsToRemove.length = 0;
+        }
+    };
+    
+    /**
+     *  Handler for the entityReleased event. Remove released entity from the visible objects list
+     */
+    TiledMap.prototype['onEntityReleased'] = function(key, value) {
+        if (!this['lock']) {
+            this.removeEntity(value);
+        } else {
+            this._objectsToRemove[this._objectsToRemove.length] = value;
+        }
+    };
+    
+    TiledMap.prototype['onEntityMoved'] = function(key, value) {
+        this['resortRequired'] = true;
+    };
+    
+    /**
+     *  Find a path from start position (x0, y0) on current map to finish position (x1, y1)
+     *  @param  {number}    x0  Start X coordinate (in tiles)
+     *  @param  {number}    y0  Start Y coordinate (in tiles)
+     *  @param  {number}    x1  Finish X coordinate (in tiles)
+     *  @param  {number}    y1  Finish Y coordinate (in tiles)
+     *  @return {Array|undefined}   If path found it will be returned as Array, or undefined otherwise
+     */
+    TiledMap.prototype['getPath'] = function(x0, y0, x1, y1) {
+        if (!this['astar'] || !this['graph']) return undefined;
+        
+        return this['astar']['search'](this['graph'], x0 + y0*this.width, x1 + y1*this.width, {diagonal: true});
+    };
+    
     TGE['TiledMap'] = TiledMap;
-
 })(TiledGameEngine);

@@ -1,7 +1,5 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
-    "use strict";
-	
     /**
      * Construct LoadingStage instance 
      * @constructor
@@ -35,7 +33,6 @@
     
     LoadingStage.prototype['setStage'] = function(stage) {
         this.currentStage = Math.max(stage, this.stages);
-        console.log(this.currentStage, stage, this.stages);
     }
     
     /**
@@ -180,6 +177,7 @@
         }
 
         this.fullRender = true;
+        this['screen']['fade'](true);
     };
 /*    
     LoadingStage.prototype.deactivate = function() {

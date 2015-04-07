@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.2 - 18th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     "use strict";
     
@@ -50,10 +50,10 @@
     TiledMapStage.prototype['activate'] = function() {
         TiledGameEngine['Stage'].prototype['activate'].call(this);
         
-        if (this['screen']['layers'] < this.tmap['layerscnt']) {
-            this['screen']['addLayer'](this.tmap['layerscnt'] - this['screen']['layers']);
-        } else if (this['screen']['layers'] > this.tmap['layerscnt']) {
-            this['screen']['remLayer'](this['screen']['layers'] - this.tmap['layerscnt']);
+        if (this['screen']['layers'] < this.tmap['layerscnt']+1) {
+            this['screen']['addLayer'](this.tmap['layerscnt'] - this['screen']['layers'] + 1);
+        } else if (this['screen']['layers'] > this.tmap['layerscnt'] + 1) {
+            this['screen']['remLayer'](this['screen']['layers'] - this.tmap['layerscnt'] - 1);
         }
         
         this['screen']['clear']();
@@ -123,6 +123,8 @@
         this['redraw'] = false;
         
         var dt2;
+		
+//		t = t - t%10;
         
 //        if (this.viewportMoved) this.animation = true;
         
@@ -136,6 +138,11 @@
         } else {
             dt2 = 1000;
             
+            if (this.tmap['resortRequired']) {
+                this.tmap['sortObjects']();
+            }
+            
+            this.tmap['lockObjects']();
             for (var i = 0; i < cnt; ++i) {
                 var obj = this.tmap['objects'][i];
                 
@@ -143,6 +150,7 @@
                 
                 this['redraw'] |= obj['redraw'];
             }
+            this.tmap['unlockObjects']();
 
             return dt2;
         }
@@ -203,12 +211,21 @@
                 if (ctx) {
                     ctx.clearRect(0, 0, vp[2], vp[3]);
 
+                    this.tmap['lockObjects']();
+
                     for (i = 0, layerscount = this.tmap['objects'].length; i < layerscount; ++i) {
                         var obj = this.tmap['objects'][i];
                         
                         if (obj.visible) obj['render'](ctx, this, vp);
                     }
+                    
+                    this.tmap['unlockObjects']();
                 }
+            }
+
+            if (false) {
+                ctx = this['screen']['getLayer'](this['screen']['layers']-1);
+                this.renderGrid(ctx);
             }
         }
     };
@@ -349,6 +366,49 @@
         this.viewportX = this['screen']['viewport'][0];
         this.viewportY = this['screen']['viewport'][1];
     };
+
+    TiledMapStage.prototype.renderGrid = function(ctx) {
+        ctx.clearRect(0, 0, this['screen']['viewport'][2], this['screen']['viewport'][3]);
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(29, 57, 101, 0.75)";
+//        ctx.fillStyle = "rgba(255, 64, 255, 0.75)";
+//        ctx.textAlign = "center";
+//        ctx.textBaseline = "middle";
+        
+        var iso = this.scr2Tile(this['screen']['viewport'][2]/2, this['screen']['viewport'][3]/2);
+        
+        var w = (~~(this['screen']['viewport'][2] / this.tmap['tilewidth']) + 2); if (!w%2) w++;
+        var h = (~~(this['screen']['viewport'][3] / this.tmap['tileheight']) + 2); if (!h%2) h++;
+        
+        var dx = this.tmap['mapwidth']/2 + this['screen']['viewport'][0],
+            dy = this['screen']['viewport'][1],
+            points = [	[- 0,                          + 0],
+                        [+ this.tmap['tilewidth']/2,   + this.tmap['tileheight']/2],
+                        [- 0,                          + this.tmap['tileheight']],
+                        [- this.tmap['tilewidth']/2,   + this.tmap['tileheight']/2]];
+        
+        for (var x = -w; x < w; x++) {
+            for (var y = -h; y < h; y++) {
+            
+                if ((x + y) & 1) continue;
+                
+                var tx = iso[0] + ~~((y + x)/2),
+                    ty = iso[1] + ~~((y - x)/2);
+                    
+                if (tx < 0 || ty < 0) continue;
+                if (tx >= this.tmap['width'] || ty >= this.tmap['height']) continue;
+
+                var scrx = ~~((tx - ty) * this.tmap['tilewidth'] / 2),
+                    scry = ~~((tx + ty) * this.tmap['tileheight'] / 2);
+                
+                ctx .dashedLine(points[0][0] + dx + scrx, points[0][1] + dy + scry, points[1][0] + dx + scrx, points[1][1] + dy + scry)
+                    .dashedLine(points[1][0] + dx + scrx, points[1][1] + dy + scry, points[2][0] + dx + scrx, points[2][1] + dy + scry);
+            }
+        }
+
+        ctx.closePath();
+        ctx.stroke();
+    }
 
     TGE['TiledMapStage'] = TiledMapStage;
 })(TiledGameEngine);

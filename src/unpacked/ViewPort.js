@@ -1,7 +1,7 @@
-/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
- *	Who				When			What	Status	Description
- *  @elvariongh		23 Mar, 2015	#3		Fixed	Replaced direct text insertion with document fragment
+ *  Who             When            What    Status  Description
+ *  @elvariongh     23 Mar, 2015    #3      Fixed   Replaced direct text insertion with document fragment
  */
 (function(w, TGE) {
     /**
@@ -34,8 +34,8 @@
 
         // store viewport reference and set initial css styles
         this.domViewport = document.querySelector(tag);
-        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
-//        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
+//        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
+        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
 
 //        var clrect = this.domViewport.getClientRects();
         
@@ -43,29 +43,29 @@
         this.offsetY  = 0;// clrect[0].top;
         
         // desktop only events: resize, mousedown, mouseup, mousemove
-		window.addEventListener('resize', throttle(this.onResize, 64, this), true);
+        window.addEventListener('resize', throttle(this.onResize, 64, this), true);
         this.domViewport.addEventListener('mousedown',  throttle(this.onMouseDown,  16, this), true);
         this.domViewport.addEventListener('mouseup',    throttle(this.onMouseUp,    16, this), true);
         this.domViewport.addEventListener('mousemove',  throttle(this.onMouseMove,  64, this), true);
         this.domViewport.addEventListener('mouseout',   throttle(this.onMouseUp,    16, this), true);
-		this.domViewport.addEventListener('mouseclick',		throttle(this.onMouseClick,	32, this), true);
+        this.domViewport.addEventListener('mouseclick',		throttle(this.onMouseClick,	32, this), true);
         
         document.addEventListener('keydown', this.onKeyDown.bind(this), true);
         
         // touch events
-		if (TGE['Device'] && TGE['Device']['touch']) {
+        if (TGE['Device'] && TGE['Device']['touch']) {
             this.touchHistory = [];
-			this.domViewport.addEventListener("touchstart", 	throttle(this.touchHandler, 16, this), true);
-			this.domViewport.addEventListener("touchmove", 		throttle(this.touchHandler, 16, this), true);
-			this.domViewport.addEventListener("touchend", 		throttle(this.touchHandler, 16, this), true);
-			this.domViewport.addEventListener("touchcancel", 	throttle(this.touchHandler, 16, this), true);
-		}
+            this.domViewport.addEventListener("touchstart", 	throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchmove", 		throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchend", 		throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchcancel", 	throttle(this.touchHandler, 16, this), true);
+        }
         
         if (TGE['Device'] && TGE['Device']['mobile']) {
             // disable page zoom on mobiles
-			var n = document.createDocumentFragment();
-			n.textContent = '<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />';
-			document.getElementsByTagName('head')[0].appendChild(n);
+            var n = document.createDocumentFragment();
+            n.textContent = '<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />';
+            document.getElementsByTagName('head')[0].appendChild(n);
         }
         
         // create canvas elements inside container
@@ -82,59 +82,59 @@
         this.profiling = 0;
     };
     
-	ViewPort.prototype.touchHandler = function(e) {
+    ViewPort.prototype.touchHandler = function(e) {
         // stop default event processing
         e.preventDefault();
         
         // get touch event
-		var touch = e.changedTouches[0],
+        var touch = e.changedTouches[0],
             type = e.type;
-		
+        
         // add this event to the touch history
-		this.touchHistory[this.touchHistory.length] = e.type;
-		
+        this.touchHistory[this.touchHistory.length] = e.type;
+        
         // analyze event sequences
-		if (this.touchHistory.length > 3) {
-			this.touchHistory.shift();
-		}
-		
-		var h = this.touchHistory;
-		var l = h.length;
-		if (l > 1) {
-			if (h[l-1] === "touchend") {
-				if (h[l-2] === "touchstart" || (l === 3 && h[l-3] === "touchstart")) {
-					type = "tap";
-				}			
-			} else if (h[l-1] === "touchmove") {
-				if (h[l-2] === "touchstart") { // ignore that event
-					return;
-				}
-			}
-		}
+        if (this.touchHistory.length > 3) {
+            this.touchHistory.shift();
+        }
+        
+        var h = this.touchHistory;
+        var l = h.length;
+        if (l > 1) {
+            if (h[l-1] === "touchend") {
+                if (h[l-2] === "touchstart" || (l === 3 && h[l-3] === "touchstart")) {
+                    type = "tap";
+                }			
+            } else if (h[l-1] === "touchmove") {
+                if (h[l-2] === "touchstart") { // ignore that event
+                    return;
+                }
+            }
+        }
 
         // simulate mouse events
-		var simulatedEvent = document.createEvent("MouseEvent");
-			simulatedEvent.initMouseEvent({
-			touchstart: "mousedown",
-			touchmove: "mousemove",
-			touchend: "mouseup",
-			tap: "mouseclick"
-		}[type], true, true, window, 1,
-			touch.screenX, touch.screenY,
-			touch.clientX, touch.clientY, false,
-			false, false, false, 0, null);
+        var simulatedEvent = document.createEvent("MouseEvent");
+            simulatedEvent.initMouseEvent({
+            touchstart: "mousedown",
+            touchmove: "mousemove",
+            touchend: "mouseup",
+            tap: "mouseclick"
+        }[type], true, true, window, 1,
+            touch.screenX, touch.screenY,
+            touch.clientX, touch.clientY, false,
+            false, false, false, 0, null);
 
-		touch.target.dispatchEvent(simulatedEvent);
-	};
+        touch.target.dispatchEvent(simulatedEvent);
+    };
 
     ViewPort.prototype.onKeyDown = function(e) {
         switch (e.which) {
-            case 192: /* ~ */ {
-                if (this.profiling) console.profileEnd();
-                else console.profile();
+            // case 192: /* ~ */ {
+                // if (this.profiling) console.profileEnd();
+                // else console.profile();
                 
-                this.profiling ^= 1;
-            } break;
+                // this.profiling ^= 1;
+            // } break;
             
             case 33 /* PageUp */: {
                 this.dnd[3] = -8;
@@ -186,7 +186,7 @@
                 this.dnd[3] = -2;
             } break;
             default: {
-                console.log(e.which);
+//                console.log(e.which);
                 return;
             } break;
         }
@@ -208,11 +208,10 @@
         }
     };
     
-	ViewPort.prototype.onMouseClick = function(e) {
-		console.log(this.dnd);
-		TGE['bus']['notify']('click', {x: e.clientX - this.offsetX, y: e.clientY - this.offsetY});
-	}
-	
+    ViewPort.prototype.onMouseClick = function(e) {
+        TGE['bus']['notify']('click', {x: e.clientX - this.offsetX, y: e.clientY - this.offsetY});
+    }
+    
     // mouse down handler - start dragging
     ViewPort.prototype.onMouseDown = function(e) {
         // stop event propagation
@@ -224,7 +223,7 @@
         this.dnd[0] = e.clientX - this.offsetX;
         this.dnd[1] = e.clientY - this.offsetY;
         this.dnd[2] = false;
-		this.dnd[5] = true;
+        this.dnd[5] = true;
     };
     
     // mouse up and mouse out handler - stop dragging
@@ -234,8 +233,7 @@
         e.stopImmediatePropagation();
         e.stopPropagation();
         
-		this.dnd[5] = false;
-		
+        
         // stop dragging
         if (this.dnd[2]) {
             this.dnd[2] = false;
@@ -261,18 +259,21 @@
                 TGE['bus']['notify']('onviewportmove');
             }
         } else {
-//			console.log('click');
-        // simulate mouse events
-			var simulatedEvent = document.createEvent("MouseEvent");
-				simulatedEvent.initMouseEvent({
-				tap: "mouseclick"
-			}['tap'], true, true, window, 1,
-				e.screenX, e.screenY,
-				e.clientX, e.clientY, false,
-				false, false, false, 0, null);
+            if (this.dnd[5]) {
+                // simulate mouse events
+                var simulatedEvent = document.createEvent("MouseEvent");
+                    simulatedEvent.initMouseEvent({
+                    tap: "mouseclick"
+                }['tap'], true, true, window, 1,
+                    e.screenX, e.screenY,
+                    e.clientX, e.clientY, false,
+                    false, false, false, 0, null);
 
-			e.target.dispatchEvent(simulatedEvent);
-		}
+                e.target.dispatchEvent(simulatedEvent);
+            }
+        }
+
+        this.dnd[5] = false;
     };
     
     // mouse move handler - drag
@@ -289,7 +290,7 @@
         if (!this.dnd[3] && !this.dnd[4]) return;
 
         if (this.dnd[5]) {
-			this.dnd[2] = true;
+            this.dnd[2] = true;
             // update viewport coordinates
             if ((this['viewport'][0] + this.dnd[3] >= this.boundingBox[0] &&
                 this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2])) {
@@ -342,7 +343,7 @@
         
         this.domViewport.style.width = width + 'px';
         this.domViewport.style.height = height + 'px';
-        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
+//        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
 
         // this.boundingBox[0] = -width;
         // this.boundingBox[1] = -height;
@@ -586,5 +587,12 @@
         }
     }
 
+    ViewPort.prototype.fullscreen = function() {
+        if (document.fullscreenEnabled) {
+            ducument.exitFullscreen();
+        } else {
+            this.domViewport.requestFullscreen();
+        }
+    }
     TGE['ViewPort'] = ViewPort;
 })(window, TiledGameEngine);

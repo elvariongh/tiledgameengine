@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.4 - 23th Mar 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     "use strict";
 	function NewEntity() {

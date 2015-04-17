@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
  *  Who             When            What    Status  Description
  *  @elvariongh     23 Mar, 2015    #2      Fixed   getAssets static method implementation added
@@ -7,6 +7,17 @@
     "use strict";
 
     var _noOffset = new Int32Array([0,0]);
+    
+    var behaviorActions = {move: 0, swing: 1, shoot: 2, wait: 3};
+    
+    var faceDirection = {   SW:  0,
+                            W:   1,
+                            NW:  2,
+                            N:   3,
+                            NE:  4,
+                            E:   5,
+                            SE:  6,
+                            S:   7};
     
     function Unit() {
         // call super-class implementation
@@ -18,7 +29,7 @@
 
         this.frameIdx = 0;
         this.animDirection = 0; // for 'back_forth' animation 0 - forward, 1 - rewind
-        this.direction = 1;
+        this.direction = faceDirection.W;
         
         this.lasttime = 0;
         
@@ -31,9 +42,15 @@
         this.dx = 0;
         this.dy = 0;
         
-        this.finalStates = {'die': 1, 'critdie': 1, 'stance': 1};
+        this.finalStates = {'die': 1, 'critdie': 1, 'stance': 2};
         this.defaultState = 'stance';
         this.state = this.defaultState;
+        
+        this['mobile'] = true;
+        
+        this.action = behaviorActions.wait;
+        this.actionX = undefined;
+        this.actionY = undefined;
     }
     
     // super-class inheritance
@@ -41,8 +58,8 @@
 
     Unit.prototype.init = function(data, assetManager, map) {
         // convert source data to the entities coordinates
-        data.x = data.x / map.tilewidth * 2;
-        data.y = data.y / map.tileheight;
+        data.x = map.px2tx(data.x);// / map.tilewidth * 2;
+        data.y = map.py2ty(data.y);// / map.tileheight;
 
         // call super-class implementation
         TiledGameEngine['EntitiesFactory']['entity'].prototype['init'].call(this, data, assetManager, map);
@@ -88,19 +105,20 @@
         
         // get custom properties
         if (data['properties']['direction']) {
+            // face direction
             var v = data['properties']['direction'];
             if (isNaN(+v)) {
                 v = v.toUpperCase();
                 switch (v) {
-                    case 'SW':  this.direction = 0; break;
-                    case 'W':   this.direction = 1; break;
-                    case 'NW':  this.direction = 2; break;
-                    case 'N':   this.direction = 3; break;
-                    case 'NE':  this.direction = 4; break;
-                    case 'E':   this.direction = 5; break;
-                    case 'SE':  this.direction = 6; break;
-                    case 'S':   this.direction = 7; break;
-                    default:    this.direction = 0; break;
+                    case 'SW':  this.direction = faceDirection.SW; break;
+                    case 'W':   this.direction = faceDirection.W; break;
+                    case 'NW':  this.direction = faceDirection.NW; break;
+                    case 'N':   this.direction = faceDirection.N; break;
+                    case 'NE':  this.direction = faceDirection.NE; break;
+                    case 'E':   this.direction = faceDirection.E; break;
+                    case 'SE':  this.direction = faceDirection.SE; break;
+                    case 'S':   this.direction = faceDirection.S; break;
+                    default:    this.direction = faceDirection.SW; break;
                 }
             } else {
                 v = (+v)%8;
@@ -108,10 +126,11 @@
                 this.direction = v;
             }
         } else {
-            this.direction = 0;
+            this.direction = faceDirection.SW;
         }
         
         if (data['properties']['state']) {
+            // initial state
             if (this.animation[data['properties']['state']]) {
                 this.state = data['properties']['state'];
             } else {
@@ -125,6 +144,10 @@
         
         this.scr = undefined;
         this.frame = undefined;
+        
+        this['mutable'] = true;
+
+        this['bus']['notify']('entityChangeState', this);
     };
     
     Unit.prototype.update = function update(dt, time, viewport) {
@@ -150,10 +173,7 @@
                 if (this.animation[this.state]['type'] === 'looped') {
                     if (this.frameIdx === this.animation[this.state]['frames']-1) {
                         // last frame in sequence - change the state, if any
-
-                        if (this.dx || this.dy) {
-                            this.finishStep();
-                        }
+                        this.finishAction();
                         
                         if (this.path.length) {
                             // unit has path - make next step
@@ -185,9 +205,7 @@
                         this.animDirection = 1;
                     } else if (this.frameIdx < 0) {
                         // last frame in sequence - change the state, if any
-                        if (this.dx || this.dy) {
-                            this.finishStep();
-                        }
+                        this.finishAction();
 
                         if (this.path.length) {
                             this.nextStep();
@@ -210,9 +228,8 @@
                     this.redraw = true;
                 } else if (this.animation[this.state]['type'] === 'play_once') {
                     if (this.frameIdx === this.animation[this.state]['frames']-1) {
-                        if (this.dx || this.dy) {
-                            this.finishStep();
-                        }
+                        // last frame in sequence - change the state, if any
+                        this.finishAction();
 
                         if (this.path.length) {
                             this.nextStep();
@@ -312,40 +329,64 @@
         x = +x; y = +y;
         
         if (this['x'] === x && this['y'] === y) return;
-        
+
         this.changeState('run', 0);
 
         this.dx = x - this['x'];
         this.dy = y - this['y'];
 
         // change unit face direction
-             if (this.dx === 0 && this.dy < 0) this.direction = 3;
-        else if (this.dx === 0 && this.dy > 0) this.direction = 7;
-        else if (this.dy === 0 && this.dx < 0) this.direction = 1;
-        else if (this.dy === 0 && this.dx > 0) this.direction = 5;
-        else if (this.dx > 0   && this.dy > 0) this.direction = 6;
-        else if (this.dx < 0   && this.dy < 0) this.direction = 2;
-        else if (this.dx > 0   && this.dy < 0) this.direction = 4;
-        else this.direction = 0;
+             if (this.dx === 0 && this.dy < 0) this.direction = faceDirection.N;
+        else if (this.dx === 0 && this.dy > 0) this.direction = faceDirection.S;
+        else if (this.dy === 0 && this.dx < 0) this.direction = faceDirection.W;
+        else if (this.dy === 0 && this.dx > 0) this.direction = faceDirection.E;
+        else if (this.dx > 0   && this.dy > 0) this.direction = faceDirection.SE;
+        else if (this.dx < 0   && this.dy < 0) this.direction = faceDirection.NW;
+        else if (this.dx > 0   && this.dy < 0) this.direction = faceDirection.NE;
+        else this.direction = faceDirection.SW;
 
         this.scr = undefined;
-
-        TGE['bus']['notify']('entityMoved', this);
     };
     
     Unit.prototype['setPath'] = function(path) {
-        if (!this.path.length) {
-            this.path = path;
-            this['nextStep']();
-        } else {
-            this.nextPath = path;
+        
+        var b = [];
+        for (var i = 0, l = path.length; i < l; ++i) {
+            b[b.length] = {action: behaviorActions.move, x: path[i].x, y: path[i].y};
         }
+        
+        if (!this.path.length) {
+            this.path = b;
+            if (!this.dx && !this.dy) {
+                this['nextStep']();
+            }
+        } else {
+            this.nextPath = b;
+        }
+    };
+    
+    Unit.prototype.finishAction = function() {
+        if (this.action === behaviorActions.move) {
+            if (this.dx || this.dy) this.finishStep();
+            return;
+        }
+        
+        if (this.action === behaviorActions.wait) return;
+        
+        // just attack action left
+        console.log(this.name, this.action);
+        TGE['bus']['notify']('entityActionFinished', this);
+        
+        
+        this.action = behaviorActions.wait;
     };
     
     Unit.prototype['finishStep'] = function() {
         this.x += this.dx;
         this.y += this.dy;
         this['z'] = this['x'] + this['y']*this['map']['width']*20 + 19;
+        
+        this.dx *= -1; this.dy *= -1;
         
         TGE['bus']['notify']('entityMoved', this);
         this['bus']['notify']('entityMoved', this);
@@ -356,26 +397,97 @@
         
         if (this.nextPath.length) {
             this.path.length = 0;
-            this.setPath(this.nextPath.slice(0));
+            this.setPath(this.nextPath);
             this.nextPath.length = 0;
         }
-//        console.log('finishStep');
+        
+        if (!this.path.length && !this.dx && !this.dy) {
+            this['bus']['notify']('entityFinishPath', this);
+        }
+        
+        this.action = behaviorActions.wait;
     };
     
     Unit.prototype['nextStep'] = function() {
-        if (!this.path.length) return false;
+        if (!this.path.length) {
+            this.action = behaviorActions.wait;
+            return false;
+        }
+        
+        if (this.finalStates[this.state] === 1) { return false; }
 
         var step = this.path.shift();
+        
+        switch (step['action']) {
+            case behaviorActions.move: {
+                this.move(step['x'], step['y']);
+                this.action = step['action'];
+                return true;
+            } break;
+            case behaviorActions.swing: 
+            case behaviorActions.shoot: {
+                var dx = step['x'] - this['x'],
+                    dy = step['y'] - this['y'];
 
-        this.move(step.x, step.y);
+                // change unit face direction
+                     if (dx === 0 && dy < 0) this.direction = faceDirection.N;
+                else if (dx === 0 && dy > 0) this.direction = faceDirection.S;
+                else if (dy === 0 && dx < 0) this.direction = faceDirection.W;
+                else if (dy === 0 && dx > 0) this.direction = faceDirection.E;
+                else if (dx > 0   && dy > 0) this.direction = faceDirection.SE;
+                else if (dx < 0   && dy < 0) this.direction = faceDirection.NW;
+                else if (dx > 0   && dy < 0) this.direction = faceDirection.NE;
+                else this.direction = faceDirection.SW;
+                
+                if (step['action'] === behaviorActions.shoot) {
+                    this.changeState('shoot');
+                } else {
+                    this.changeState('swing');
+                }
+                
+                this.action = step['action'];
+                this.actionX = step['x'];
+                this.actionY = step['y'];
+                return true;
+            } break;
+            case behaviorActions.wait: {
+                this.changeState('stance');
+
+                this.action = step['action'];
+                return true;
+            } break;
+        }
         return true;
+    };
+    
+    Unit.prototype['pushBehavior'] = function(b) {
+        if (b instanceof Array) {
+            for (var i = b.length; i; --i) {
+                this.path.unshift(b[i-1]);
+            }
+        } else {
+            this.path.unshift(b);
+            if (b.immediate) {
+                if (this.animation[this.state]['type'] === 'back_forth') {
+                    this.animDirection = 1;
+                    this.frameIdx = 0;
+                } else {
+                    this.frameIdx = this.animation[this.state]['frames']-1;
+                }
+            }
+        }
     };
     
     Unit.prototype['changeState'] = function(state, time) {
         this.dx = this.dy = 0;
         this.frameIdx = 0;
         this.lasttime = time || 0;
+        
+        if (this.state === state) return;
+        
         this.state = state;
+        
+        this['bus']['notify']('entityChangeState', this);
     };
 
     Unit.getAssets = function(obj) {
@@ -389,6 +501,17 @@
         }
 
         return undefined;
+    };
+
+    Unit.prototype.behaviorActions = behaviorActions;
+    
+    Unit.prototype['onEntityMoved'] = function(key, ent) {
+        
+        var x = ent['x'],
+            y = ent['y'],
+            p = this['map']['getPath'](this['x'], this['y'], x, y, true);
+
+            if (p) {p.pop(); this.map.setEntityPath(this,p)};
     };
     
     TGE.EntitiesFactory.register('unit', Unit);

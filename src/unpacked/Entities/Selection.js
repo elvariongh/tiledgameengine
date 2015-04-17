@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     "use strict";
 
@@ -53,6 +53,7 @@
         }
 
         this['clickable'] = false;
+        this['mutable'] = true;
     };
 
     Selection.prototype.update = function update(dt, time, viewport) {
@@ -148,11 +149,6 @@
 
         TGE['bus']['notify']('entityMoved');
     };
-    
-    // Selection.prototype['onEntityUpdated'] = function(key, ent) {
-        // console.info('onEntityUpdated', ent.name, ent.dx, ent.dy);
-// //        this.bindUpdate = ent;
-    // };
 
     Selection.prototype['onEntityMoved'] = function(key, ent) {
         var f = this.frame;

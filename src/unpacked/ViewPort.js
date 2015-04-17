@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
  *  Who             When            What    Status  Description
  *  @elvariongh     23 Mar, 2015    #3      Fixed   Replaced direct text insertion with document fragment
@@ -34,8 +34,8 @@
 
         // store viewport reference and set initial css styles
         this.domViewport = document.querySelector(tag);
-//        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
-        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
+        this.domViewport.style.cssText = 'position: absolute; left: 50%; margin-left:-'+width/2+'px; top: 100px; display:none;';
+//        this.domViewport.style.cssText = 'position:fixed; left: 0px; top:0px; display:none;';
 
 //        var clrect = this.domViewport.getClientRects();
         
@@ -43,22 +43,23 @@
         this.offsetY  = 0;// clrect[0].top;
         
         // desktop only events: resize, mousedown, mouseup, mousemove
-        window.addEventListener('resize', throttle(this.onResize, 64, this), true);
-        this.domViewport.addEventListener('mousedown',  throttle(this.onMouseDown,  16, this), true);
-        this.domViewport.addEventListener('mouseup',    throttle(this.onMouseUp,    16, this), true);
-        this.domViewport.addEventListener('mousemove',  throttle(this.onMouseMove,  64, this), true);
-        this.domViewport.addEventListener('mouseout',   throttle(this.onMouseUp,    16, this), true);
-        this.domViewport.addEventListener('mouseclick',		throttle(this.onMouseClick,	32, this), true);
+        window.addEventListener('resize',                   throttle(this.onResize, 64, this), true);
+        this.domViewport.addEventListener('mousedown',      throttle(this.onMouseDown,  16, this), true);
+        this.domViewport.addEventListener('mouseup',        throttle(this.onMouseUp,    16, this), true);
+        this.domViewport.addEventListener('mousemove',      throttle(this.onMouseMove,  32, this), true);
+        this.domViewport.addEventListener('mouseout',       throttle(this.onMouseUp,    16, this), true);
+        this.domViewport.addEventListener('mouseclick',     throttle(this.onMouseClick, 16, this), true);
+        this.domViewport.addEventListener('contextmenu',    throttle(this.onMouseClick2,16, this), true);
         
         document.addEventListener('keydown', this.onKeyDown.bind(this), true);
         
         // touch events
         if (TGE['Device'] && TGE['Device']['touch']) {
             this.touchHistory = [];
-            this.domViewport.addEventListener("touchstart", 	throttle(this.touchHandler, 16, this), true);
-            this.domViewport.addEventListener("touchmove", 		throttle(this.touchHandler, 16, this), true);
-            this.domViewport.addEventListener("touchend", 		throttle(this.touchHandler, 16, this), true);
-            this.domViewport.addEventListener("touchcancel", 	throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchstart",     throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchmove",      throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchend",       throttle(this.touchHandler, 16, this), true);
+            this.domViewport.addEventListener("touchcancel",    throttle(this.touchHandler, 16, this), true);
         }
         
         if (TGE['Device'] && TGE['Device']['mobile']) {
@@ -136,80 +137,104 @@
                 // this.profiling ^= 1;
             // } break;
             
-            case 33 /* PageUp */: {
-                this.dnd[3] = -8;
-                this.dnd[4] = 0;
-            } break;
-            case 34 /* PageDown */: {
-                this.dnd[3] = 8;
-                this.dnd[4] = 0;
-            } break;
-            case 35 /* End */: {
-                this.dnd[3] = 0;
-                this.dnd[4] = 8;
-            } break;
-            case 36 /* Home */: {
-                this.dnd[3] = 0;
-                this.dnd[4] = -8;
-            } break;
-            case 37 /* Left */: {
-                this.dnd[3] = -2;
-                this.dnd[4] = 0;
-            } break;
-            case 38 /* Up */: 
-            case 104 /* Num Up */: {
-                this.dnd[4] = -2;
-                this.dnd[3] = 0;
-            } break;
-            case 39 /* Right */: {
-                this.dnd[3] = 2;
-                this.dnd[4] = 0;
-            } break;
+            // case 33 /* PageUp */: {
+                // this.dnd[3] = -8;
+                // this.dnd[4] = 0;
+            // } break;
+            // case 34 /* PageDown */: {
+                // this.dnd[3] = 8;
+                // this.dnd[4] = 0;
+            // } break;
+            // case 35 /* End */: {
+                // this.dnd[3] = 0;
+                // this.dnd[4] = 8;
+            // } break;
+            // case 36 /* Home */: {
+                // this.dnd[3] = 0;
+                // this.dnd[4] = -8;
+            // } break;
+            // case 37 /* Left */: {
+                // // this.dnd[3] = -2;
+                // // this.dnd[4] = 0;
+            // } break;
+            // case 38 /* Up */: {
+                // // this.dnd[4] = -2;
+                // // this.dnd[3] = 0;
+            // } break;
+            // case 39 /* Right */: {
+                // // this.dnd[3] = 2;
+                // // this.dnd[4] = 0;
+            // } break;
+            // case 40 /* Down */: {
+                // // this.dnd[4] = 2;
+                // // this.dnd[3] = 0;
+            // } break;
+            // case 97 /* Num 1 */: {
+                // // this.dnd[4] = 2;
+                // // this.dnd[3] = -2;
+            // } break;
+            // case 99 /* Num 3 */: {
+                // // this.dnd[4] = 2;
+                // // this.dnd[3] = 2;
+            // } break;
+            // case 105 /* Num 9 */: {
+                // // this.dnd[4] = -2;
+                // // this.dnd[3] = 2;
+            // } break;
+            // case 103 /* Num 7 */: {
+                // // this.dnd[4] = -2;
+                // // this.dnd[3] = -2;
+            // } break;
+            case 37 /* Left */:
+            case 38 /* Up */:
+            case 39 /* Right */:
             case 40 /* Down */: {
-                this.dnd[4] = 2;
-                this.dnd[3] = 0;
+                TGE['bus']['notify']('keypresses', e.which);
             } break;
-            case 97 /* Num 1 */: {
-                this.dnd[4] = 2;
-                this.dnd[3] = -2;
-            } break;
-            case 99 /* Num 3 */: {
-                this.dnd[4] = 2;
-                this.dnd[3] = 2;
-            } break;
-            case 105 /* Num 9 */: {
-                this.dnd[4] = -2;
-                this.dnd[3] = 2;
-            } break;
-            case 103 /* Num 7 */: {
-                this.dnd[4] = -2;
-                this.dnd[3] = -2;
+            case 93 /* Context Menu */: {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                e.stopPropagation();
+                return;
             } break;
             default: {
-//                console.log(e.which);
+                console.log(e.which);
                 return;
             } break;
         }
 
         // update viewport coordinates
-        if (this['viewport'][0] + this.dnd[3] >= this.boundingBox[0] &&
-            this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2]) {
-            this['viewport'][0] += this.dnd[3];
-        } else this.dnd[3] = 0;
+        // if (this['viewport'][0] + this.dnd[3]                       >= this.boundingBox[0] &&
+            // this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2]) {
+            // this['viewport'][0] += this.dnd[3];
+        // } else {
+            // this.dnd[3] = 0;
+        // }
         
-        if (this['viewport'][1] + this.dnd[4] >= this.boundingBox[1] &&
-            this['viewport'][1] + this['viewport'][3] + this.dnd[4] <= this.boundingBox[3]) {
-            this['viewport'][1] += this.dnd[4];
-        } else this.dnd[4] = 0;
+        // if (this['viewport'][1] + this.dnd[4]                       >= this.boundingBox[1] &&
+            // this['viewport'][1] + this['viewport'][3] + this.dnd[4] <= this.boundingBox[3]) {
+            // this['viewport'][1] += this.dnd[4];
+        // } else this.dnd[4] = 0;
 
-        if (this.dnd[3] || this.dnd[4]) {
-            // notify all subscribers
-            TGE['bus']['notify']('onviewportmove');
-        }
+        // if (this.dnd[3] || this.dnd[4]) {
+            // // notify all subscribers
+            // TGE['bus']['notify']('onviewportmove');
+        // }
     };
     
+    ViewPort.prototype.onMouseClick2 = function(e) {
+        // stop event propagation
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+    }
+    
     ViewPort.prototype.onMouseClick = function(e) {
-        TGE['bus']['notify']('click', {x: e.clientX - this.offsetX, y: e.clientY - this.offsetY});
+        // stop event propagation
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        e.stopPropagation();
+        TGE['bus']['notify']('click', {x: e.clientX - this.offsetX, y: e.clientY - this.offsetY, which: e.which});
     }
     
     // mouse down handler - start dragging
@@ -236,6 +261,8 @@
         
         // stop dragging
         if (this.dnd[2]) {
+            this.dnd[5] = false;
+            
             this.dnd[2] = false;
             this.dnd[3] = e.clientX - this.dnd[0] - this.offsetX;
             this.dnd[4] = e.clientY - this.dnd[1] - this.offsetY;
@@ -247,7 +274,9 @@
             if ((this['viewport'][0] + this.dnd[3] >= this.boundingBox[0] &&
                 this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2])) {
                 this['viewport'][0] += this.dnd[3];
-            } else this.dnd[3] = 0;
+            } else {
+                this.dnd[3] = 0;
+            }
             
             if ((this['viewport'][1] + this.dnd[4] >= this.boundingBox[1] &&
                 this['viewport'][1] + this['viewport'][3] + this.dnd[4] <= this.boundingBox[3])) {
@@ -262,18 +291,27 @@
             if (this.dnd[5]) {
                 // simulate mouse events
                 var simulatedEvent = document.createEvent("MouseEvent");
-                    simulatedEvent.initMouseEvent({
-                    tap: "mouseclick"
-                }['tap'], true, true, window, 1,
-                    e.screenX, e.screenY,
-                    e.clientX, e.clientY, false,
-                    false, false, false, 0, null);
+                    simulatedEvent.initMouseEvent(
+                    "mouseclick",       // type
+                    true,               // canBubble
+                    true,               // cancelable
+                    this.domViewport,   // view
+                    1,                  // detail
+                    e.screenX,          // screenX
+                    e.screenY,          // screenY
+                    e.clientX,          // clientX
+                    e.clientY,          // clientY
+                    false,              // ctrlKey
+                    false,              // altKey
+                    false,              // shiftKey
+                    false,              // metaKey
+                    e.which,            // button
+                    null);              // relatedTarget
 
                 e.target.dispatchEvent(simulatedEvent);
             }
+            this.dnd[5] = false;
         }
-
-        this.dnd[5] = false;
     };
     
     // mouse move handler - drag
@@ -295,7 +333,9 @@
             if ((this['viewport'][0] + this.dnd[3] >= this.boundingBox[0] &&
                 this['viewport'][0] + this['viewport'][2] + this.dnd[3] <= this.boundingBox[2])) {
                 this['viewport'][0] += this.dnd[3];
-            } else this.dnd[3] = 0;
+            } else {
+                this.dnd[3] = 0;
+            }
             
             if ((this['viewport'][1] + this.dnd[4] >= this.boundingBox[1] &&
                 this['viewport'][1] + this['viewport'][3] + this.dnd[4] <= this.boundingBox[3])) {
@@ -343,12 +383,7 @@
         
         this.domViewport.style.width = width + 'px';
         this.domViewport.style.height = height + 'px';
-//        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
-
-        // this.boundingBox[0] = -width;
-        // this.boundingBox[1] = -height;
-        // this.boundingBox[2] = width;
-        // this.boundingBox[3] = height;
+        this.domViewport.style.marginLeft = '-'+width/2 + 'px';
 
         if (TGE['bus']) {
             TGE['bus']['notify']('onviewportresize');
@@ -553,6 +588,12 @@
         this.boundingBox[1] = +top;
         this.boundingBox[2] = +right;
         this.boundingBox[3] = +bottom;
+        
+        var x = this.viewport[0], y = this.viewport[1];
+        if (this.viewport[0] < this.boundingBox[0]) x = this.boundingBox[0];
+        if (this.viewport[1] < this.boundingBox[1]) y = this.boundingBox[1];
+        
+        this.move(x, y);
     };
     
     /**
@@ -587,12 +628,13 @@
         }
     }
 
-    ViewPort.prototype.fullscreen = function() {
+    ViewPort.prototype['fullscreen'] = function() {
         if (document.fullscreenEnabled) {
             ducument.exitFullscreen();
         } else {
             this.domViewport.requestFullscreen();
         }
     }
+    
     TGE['ViewPort'] = ViewPort;
 })(window, TiledGameEngine);

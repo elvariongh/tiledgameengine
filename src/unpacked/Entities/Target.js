@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(w, TGE) {
     "use strict";
     function Target() {
@@ -47,6 +47,7 @@
         }
 
         this['clickable'] = false;
+        this['mutable'] = true;
     };
     
     Target.prototype.onRetain = function() {

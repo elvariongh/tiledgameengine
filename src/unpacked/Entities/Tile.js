@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     "use strict";
     /**
@@ -95,13 +95,13 @@
         this['y'] = scr[this.id*5+4];
 
         this['img'] = assetManager.get(tileset['image'])
+        
+        if (this.animated) this['mutable'] = true;
     };
     
     Tile.prototype['update'] = function(dt, time, viewport) {
-        this['redraw'] = false;
-
         // lazy resource load check
-        if (!this.width) return 1000;//console.error('tile is not loaded');
+        if (!this.width) console.error('tile is not loaded');
 
         // check if entity is visible
         if (this['x'] + this.width + viewport[0] > 0 &&
@@ -112,6 +112,8 @@
         } else {
             this['visible'] = false;
         }
+
+        this['redraw'] = false;
 
         // check if new frame need to be drawn
         if (this.animated && this['visible']) {
@@ -135,8 +137,22 @@
         return 1000;
     };
     
+    Tile.prototype['isVisible'] = function(viewport) {
+        // check if entity is visible
+        if (this['x'] + this.width + viewport[0] > 0 &&
+            this['y'] + this.height + viewport[1] > 0 &&
+            this['x'] + viewport[0] < viewport[2] &&
+            this['y'] + viewport[1] < viewport[3]) {
+            this['visible'] = true;
+        } else {
+            this['visible'] = false;
+        }
+        
+        return this['visible'];
+    };
+
     Tile.prototype['render'] = function(ctx, stage, viewport) {
-        if (!this['visible'] || !this['img']) return;
+        if (!this['img'] || !this['visible']) return;
         
         var a = this.animation[this.frame];
         

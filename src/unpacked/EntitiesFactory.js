@@ -1,11 +1,13 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
- *	Who				When			What	Status	Description
- *  @elvariongh		23 Mar, 2015	#2		Fixed	isRegistered and getAssets methods implementation
+ *  Who             When            What    Status  Description
+ *  @elvariongh     23 Mar, 2015    #2      Fixed   isRegistered and getAssets methods implementation
  */
 (function(TGE) {
     "use strict";
 
+    var _id = 1;
+    
     /** @constructor */
     function EntitiesFactory() {
         this._pool = {};        // map for pooled entities: typeName => [obj#0, obj#1...obj#N, _data]. _data - init arguments for entity
@@ -30,6 +32,8 @@
      */
     EntitiesFactory.prototype['create'] = function(json) {
         // Check input data for entity type
+        json['type'] = json['type'].toLowerCase();
+
         if (!json['type']) return undefined;
 
         // Check if required entity type is registered
@@ -39,6 +43,7 @@
 
         // Create entity and return new instance
         var ent = new this[t]();
+        ent['id'] = _id++;
         ent['init'].apply(ent, arguments);
 
         return ent;
@@ -54,10 +59,12 @@
      */
     EntitiesFactory.prototype['createPool'] = function(json) {
         // Check input data for entity type
+
         if (!json['type']) return false;
 
         // Check if required entity type is registered
-        var t = json['type'].toLowerCase();
+        var t = json['type'] = json['type'].toLowerCase();
+//        var t = json['type'].toLowerCase();
         if (!this[t]) return false;
 
         // Check if pool for that type of entities already exists
@@ -67,7 +74,7 @@
         } 
         
         json['poolSize'] = json['poolSize'] || 10;  // default pool size is 10
-        json['type'] = t;
+//        json['type'] = t;
 
         var pool = new Array(json['poolSize']);
 
@@ -85,6 +92,10 @@
 
         this._pool[t] = pool;
         this._poolFlags[t] = new Array(json['poolSize']);
+		
+		for (i = 0; i < json['poolSize']; ++i) {
+			this._poolFlags[t][i] = 0;
+		}
         
         return true;
     };
@@ -109,6 +120,9 @@
                 this._poolFlags[type][i] = 1;
 
                 ent = this._pool[type][i];
+                ent['id'] = _id++;
+                
+                break;
             }
         }
 
@@ -116,6 +130,7 @@
         if (!ent) {
             ent = this._makeShared(type);// new this[type]();
             ent['_idx'] = this._pool[type].length;
+            ent['id'] = _id++;
             ent['init'].apply(ent, this._pool[type]['_data']);
 
             this._pool[type][this._pool[type].length] = ent;

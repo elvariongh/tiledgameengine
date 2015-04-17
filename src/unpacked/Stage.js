@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 (function(TGE) {
     /**
      * Game stage basic class
@@ -21,7 +21,7 @@
         /** @type {Assets}          Asset manager to work with */
         this['am'] = assetManager;
         
-        /** @type {Screen}          Screen and Viewport manager to work with */
+        /** @type {Viewport}        Screen and Viewport manager to work with */
         this['screen'] = screen;
 
         /** @type {number}          Subscriber ID for Viewport move event */
@@ -109,5 +109,8 @@
         return offScreenCnv;
     };
 
+    Stage.prototype['follow'] = function(ent) {
+    };
+    
     TGE['Stage'] = Stage;
 })(TiledGameEngine);

@@ -1,4 +1,4 @@
-/*! TiledGameEngine v0.0.5 - 07th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
+/*! TiledGameEngine v0.0.6 - 17th Apr 2015 | https://github.com/elvariongh/tiledgameengine */
 /** History:
  *  Who             When            What    Status  Description
  *  @elvariongh     23 Mar, 2015    #2      Fixed   getAssets static method interface added
@@ -10,15 +10,29 @@
      *  Entity class constructor to define all internal variables
      */
     function Entity() {
-        this['am'] = undefined;
-        this['map'] = undefined;
+        this['am'] = undefined;                 // Reference to #assetManager
+        this['map'] = undefined;                // Reference to #TiledMap
         
-        this['x'] = this['y'] = this['z'] = 0;
-        this['name'] = '';
+        this['img'] = undefined;                // Entity image, if required
         
-        this['img'] = undefined;
+        this['visible'] = false;                // Is entity visible in viewport
+        this['clickable'] = false;              // Does entity can be selected by click/tap
+        this['redraw'] = false;                 // Does redraw require on next AF
+        this['mobile'] = false;                 // Does entity can move on map
+        this['mutable'] = false;                // Does entity can change its internal state (does update required)
+        this['bus'] = undefined;                // Private notification bus
         
-        this['redraw'] = false;
+        this['id'] = undefined;                 // Entity ID
+        this['_type'] = undefined;              // Entity type
+        this['name'] = '';                      // Entity name
+
+        this['x'] = this['y'] = this['z'] = 0;  // Entity coordinates and z-index
+
+        this['binded'] = undefined;             // Reference to other entity binded to
+        this['_sidUpdate'] = -1;                // SID for other entity update notification
+        this['_sidMove'] = -1;                  // SID for other entity move notification
+        
+//        this['_aidx'] = -1;
     };
     
     /** 
@@ -41,15 +55,48 @@
         
 //        this['_data'] = data;
         
-        this['visible'] = true;             // if true - this entity will be rednered in viewport
-        this['redraw'] = true;              // if true - this entity should be redrawn
-        this['clickable'] = true;           // if true - this entity could be selected by tap/click
-        this['bus'] = new TGE['PubSub']();  // internal notification bus for followers
+        this['visible'] = true;
+        this['redraw'] = true;
+        this['clickable'] = true;
+        this['bus'] = new TGE['PubSub']();
         
-        this['binded'] = undefined;         // reference to the binded object
+        this['binded'] = undefined;
         
         this['_sidUpdate'] = -1;
         this['_sidMove'] = -1;
+
+        // get custom properties
+        if (data['properties']) {
+            if (data['properties']['clickable']) {
+                // define if entity can be selected by tap/click
+                this['clickable'] = (data['properties']['clickable'] === 'false' || data['properties']['clickable'] === '0') ? 0 : 1;
+            }
+
+            if (data['properties']['mobile']) {
+                // define if entity is able to move. I.e. Unit can move, but teleport is not
+                this['mobile'] = (data['properties']['mobile'] === 'true' || data['properties']['mobile'] === '1') ? 1 : 0;
+            }
+            
+            if (data['properties']['behavior']) {
+                // behavior pattern
+                if (TGE.AI) {
+                    // split string representation of arguments to regular array
+                    var b = data['properties']['behavior'].split('(');
+                    
+                    if (b.length > 1) {
+                        b[1] = b[1].split(')')[0].split(',');
+                    }
+                    
+                    // set "brains" for that entity
+                    TGE.AI.bind(this, b[0], b[1]);
+                }
+            }
+        }
+
+        if (data['visible']) {
+            // initial visible state of entity
+            this['visible'] = (data['visible'] === 'false' || data['visible'] === '0') ? 0 : 1;
+        }
     };
     
     /**
@@ -62,6 +109,10 @@
      */
     Entity.prototype['update'] = function(dt, time, viewport) {
         return 1000;
+    };
+    
+    Entity.prototype['isVisible'] = function(viewport) {
+        return this['visible'];
     };
     
     /**
@@ -104,26 +155,21 @@
     };
     
     /**
-     *  Start listening for other entity modifications events
-     *  @param  {Entity}    ent     Spectating entity object
+     *  Bind one entity to other entity modifications
+     *  @param  {object}    ent     Spectating entity object
      */
     Entity.prototype['bind'] = function(ent) {
-//        ent['onEntityUpdated'] = this._onEntityUpdated.bind(this);
-
         if (this['binded']) { this['unbind'](this['binded']); };
         
         if (ent) {
-            this['_sidUpdate'] = ent['bus']['subscribe']('entityUpdated',    this['onEntityUpdated'].bind(this));
-            this['_sidMove'] = ent['bus']['subscribe']('entityMoved',      this['onEntityMoved'].bind(this));
+            this['_sidUpdate']      = ent['bus']['subscribe']('entityUpdated',    this['onEntityUpdated'].bind(this));
+            this['_sidMove']        = ent['bus']['subscribe']('entityMoved',      this['onEntityMoved'].bind(this));
+            this['_sidBreakLinks']  = ent['bus']['subscribe']('_breakLinks',      this['onBreakLinks'].bind(this));
             
             this['binded'] = ent;
         }
     };
     
-    /**
-     *  Stop listening for other entity events
-     *  @param  {Entity|undefined}  ent     Entity object to unbind
-     */
     Entity.prototype['unbind'] = function(ent) {
         if (!ent) ent = this['binded'];
 
@@ -136,15 +182,21 @@
         this['binded'] = undefined;
     };
     
-    /**
-     *  3rd part entity update notification handler
-     */
+    Entity.prototype['onBreakLinks'] = function(k, v) {
+        this['unbind'](v);
+
+        if (this.release) {
+            this.release();
+        }
+    };
+    
+    Entity.prototype['breakLinks'] = function() {
+        this['bus']['notify']('_breakLinks', this);
+    };
+    
     Entity.prototype['onEntityUpdated'] = function(key, ent) {
     };
 
-    /**
-     *  3rd part entity move notification handler
-     */
     Entity.prototype['onEntityMoved'] = function(key, ent) {
     };
 
